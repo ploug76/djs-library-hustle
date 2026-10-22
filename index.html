@@ -109,7 +109,7 @@ function sfx(n){if(!AC||!save.sfx)return;const t=AC.currentTime;switch(n){
 // =====================================================================================
 // ===== DJ ASSET BLOCK (swap point for DJ's likeness) =================================
 // Everything that makes DJ look like DJ lives in this block and nowhere else:
-//   DJ_LOOK      : palette for her pixel sprites (hair, skin, cardigan, glasses ...)
+//   DJ_LOOK      : palette for the DJ pixel sprites (hair, skin, cardigan, glasses ...)
 //   DJ_HAIR      : 'bob' | 'long' | 'short' | 'bun' (hair silhouette on the sprites)
 //   DJ_PORTRAIT  : base64 PNG of a 96x96 *pixelated* portrait (made with the J Woo method:
 //                  /workspace/djs-library/art/dj_likeness.py -> crop, BOX-resize, 48-color quantize).
@@ -330,7 +330,7 @@ function floorTargets(){const T=[],d=G.dj,LV=G.lv;
  if(G.useBin)T.push({id:'bin',r:BIN,lab:'TAKE',ok:()=>G.bin.length>0&&G.stack.length<3,act:()=>{const b=G.bin.pop();G.stack.push(b);sfx('pick');say('Holding '+bookTag(b))},why:()=>G.bin.length?'Your hands are full (3 books). Put one on a cart.':'The book drop is empty.'});
  if(G.useCarts)for(const c of CARTS)T.push({id:'cart'+c.sec,r:{x:c.x,y:c.y,w:26,h:12},lab:'PLACE',ok:()=>G.stack.length>0,act:()=>placeOnCart(c.sec),why:()=>'Pick up a book first.'});
  if(G.cart)for(const R of RANGES)T.push({id:'rng'+R.id,r:{x:R.x,y:R.y,w:R.w,h:12},lab:'SHELVE',ok:()=>G.cart.books.some(b=>rangeFor(b)===R),act:()=>enterAisle(R),why:()=>G.cart.books.length?'None of the cart books go in '+R.lab+'.':'The cart is empty!'});
- if(G.hunt&&G.hunt.on&&!G.hunt.got){const R=G.hunt.R;T.push({id:'hunt',r:{x:R.x,y:R.y,w:R.w,h:12},lab:'LOOK',pri:1,ok:()=>Math.abs(d.x-G.hunt.x)<26,act:()=>{G.hunt.got=true;sfx('good');addScore(50);say('Found it! “'+G.hunt.b.title+'” ('+G.hunt.b.call+'). Bring it to the reader.')},why:()=>'Not here. Look for the sparkle ✨ on this shelf.'})}
+ if(G.hunt&&G.hunt.on&&!G.hunt.got)for(const R of RANGES)T.push({id:'hunt'+R.id,r:{x:R.x,y:R.y,w:R.w,h:12},lab:'SEARCH',pri:1,ok:()=>true,act:()=>enterAisle(R,true)});
  if(G.hunt&&G.hunt.got&&!G.hunt.done)T.push({id:'reader',r:{x:G.hunt.rx-6,y:G.hunt.ry-8,w:12,h:14},lab:'GIVE',ok:()=>true,act:()=>{G.hunt.done=true;sfx('happy');addScore(200);say('“Thank you so much!” Misplaced book found ✓');taskDone()}});
  if(G.spill&&G.spill.on){const sp=G.spill;if(!sp.mopped)T.push({id:'puddle',r:{x:sp.x-10,y:sp.y-6,w:20,h:12},lab:'MOP',pri:1,ok:()=>G.mop,act:()=>{sp.scrub++;sfx('mop');for(let k=0;k<5;k++)G.fx.push({k:'drop',x:sp.x+rnd(-8,8),y:sp.y+rnd(-4,4),t:0,vx:rnd(-20,20),vy:rnd(-30,-10)});if(sp.scrub>=3){sp.mopped=true;addScore(60);say('Spill mopped up ✓');sfx('good');taskDone()}},why:()=>'You need the mop from the back office closet.'});
   sp.books.forEach((b,i)=>{if(!b.got)T.push({id:'sb'+i,r:{x:b.x-4,y:b.y-3,w:8,h:6},lab:'PICK UP',pri:2,ok:()=>G.stack.length<3,act:()=>{b.got=true;G.stack.push(b.b);sfx('pick');say('Holding '+bookTag(b.b))},why:()=>'Hands full! Put books on a cart first.'})})}
@@ -401,6 +401,7 @@ function mkReturn(r,late,pay){const p=mkPerson(Math.floor(r()*1e6));const b=mkAn
  return{p,name:PNAMES[(PNUM++)%PNAMES.length],kind:'ret',item:{t:'ret',b,due:dstr(addDays(-days)),days,late,fine,checked:false,marked:false,paid:false},pile:null,pat:100,x:240,state:'walk',pay:paid}}
 function front(){const q=G.desk.queue;return q.find(p=>p.state!=='leave')||null}
 function activeST(){return ST_DEF.filter(s=>(G.useList||!['CART','LIST','TILL'].includes(s.id))&&(G.useStamp||s.id!=='STAMP'))}
+function deskNext(){const D=G.desk,h=D.hold,f=front();if(!h)return f&&f.state==='wait'&&(f.kind==='out'?f.pile.length:!f.item.taken)?'DESK':null;if(h.t==='card')return'SCAN';if(h.t==='book'){if(!h.scanned)return'SCAN';if(!h.stamped)return G.useStamp?'STAMP':'DESK';return'DESK'}if(!h.checked)return'SCAN';if(h.late&&!h.marked)return'LIST';if(h.late&&!h.paid)return'TILL';return'CART'}
 function deskStation(){const D=G.desk;let best=null,bd=1e9;for(const s of activeST()){const d=Math.abs(D.x-s.x);if(d<13&&d<bd){bd=d;best=s}}return best}
 function patronDone(p,happy){p.state='leave';p.mood=happy?'happy':'mad';if(happy){G.desk.served++;sfx('happy');addScore(100+Math.round(p.pat));pop('+'+(100+Math.round(p.pat)),190,40,'#7dff8a',true)}else{G.desk.walked++;sfx('grumble');G.mistakes++;say(p.name+' got tired of waiting and left 😞')}
  if(G.desk.hold&&G.desk.hold.owner===p)G.desk.hold=null;if(G.onPatron)G.onPatron(p,happy)}
@@ -448,7 +449,8 @@ function deskUpdate(dt){const D=G.desk;D.t+=dt;if(D.flash>0)D.flash-=dt;if(D.sta
  if(D.panel){panelUpdate();return}
  let mx=(IN.r?1:0)-(IN.l?1:0);D.moving=!!mx;if(mx){D.x=clamp(D.x+mx*95*dt,G.deskExit?2:8,166);D.walk+=dt*9;D.face=mx}
  if(G.deskExit&&D.x<=3&&IN.l&&!D.hold){exitDesk();return}
- if(PRESS.a){const s=deskStation();if(s&&s.id==='STAMP'){D.dial=D.dial===3?1:3;sfx('click');say('Stamp dial: '+(D.dial===1?'1 WEEK (new books)':'3 WEEKS (regular books)'))}else{D.hop=.3;sfx('step')}}
+ if(mx)D.glide=null;else if(D.glide!=null){const dd=D.glide-D.x;if(Math.abs(dd)<1.5){D.x=D.glide;D.glide=null;D.moving=false}else{D.x+=Math.sign(dd)*Math.min(Math.abs(dd),170*dt);D.moving=true;D.walk+=dt*12;D.face=Math.sign(dd)}}
+ if(PRESS.a){const s=deskStation();if(s&&s.id==='STAMP'&&D.hold&&D.hold.t==='book'&&D.hold.scanned&&!D.hold.stamped){D.dial=D.dial===3?1:3;sfx('click');say('Stamp dial: '+(D.dial===1?'1 WEEK (new books)':'3 WEEKS (regular books)'))}else{const n=deskNext();if(!n){sfx('click');say(G.deskExit?'Nothing to do at the desk — ◀ walk left to the floor.':'Nothing to do yet — wait for the next patron.')}else{const st=ST_DEF.find(q=>q.id===n);if(Math.abs(D.x-st.x)<3)say('You’re at '+st.id+' — press B.');else{D.glide=st.x;sfx('step')}}}}
  if(PRESS.b){if(G.deskExit&&D.x<=10&&!D.hold){exitDesk();return}deskAct()}
  if(G.deskExit&&!D.queue.length&&!D.hold&&!D.panel){D.idleT=(D.idleT||0)+dt;if(D.idleT>1.2){say('Desk is clear — back to the floor!');exitDesk()}}else D.idleT=0}
 // ---- drawing ----
@@ -537,11 +539,17 @@ function exitDesk(){G.view='floor';G.dj.x=clamp(G.dj.x,130,280);G.dj.y=DESK.y-8;
 
 // ===== inside an aisle (side view): put each book in its exact call-number spot =====
 const SHX0=34,SHW=160,ROWY=[52,30,8];// row base heights above the floor: top, middle, bottom
-function enterAisle(R){const A={R,rows:[[],[],[]],x:SHX0+20,reach:1,flag:null,good:null,exitT:0,walk:0,moving:false,holdT:0};
+function enterAisle(R,search){const A={R,search:!!search,rows:[[],[],[]],x:SHX0+20,reach:1,flag:null,good:null,exitT:0,walk:0,moving:false,holdT:0};
  const stock=stockRange(R,R.id.charCodeAt(0)*977+R.id.charCodeAt(1)*31+(G.lv||0));const per=Math.ceil(stock.length/3);for(let r=0;r<3;r++)A.rows[r]=stock.slice(r*per,(r+1)*per);
  if(G.aisleBooks)for(const b of G.aisleBooks(R))A.rows[b.r].splice(b.i,0,b.o);
- A.queue=G.cart.books.filter(b=>rangeFor(b)===R);A.cur=A.queue[0];layoutRows(A);G.aisle=A;G.view='aisle';A.gap=nearestGap(A);sfx('step');playSong('aisle');
- say('Aisle '+R.lab+'. Find the spot for '+A.cur.call+(A.cur.sec==='FIC'?' ('+A.cur.lab+')':'')+'. ▼ low shelf · A step stool');if(G.onAisle)G.onAisle(R)}
+ if(search){A.queue=[];A.cur=null;const H=G.hunt;if(H&&H.R===R&&!H.got){const row=A.rows[H.row];const i=Math.min(row.length-1,Math.floor(row.length*H.pos));A.lost={key:H.b.key,lab:H.b.call,col:H.b.col,w:5,h:15,lost:true};row.splice(i,0,A.lost)}}
+ else{A.queue=G.cart.books.filter(b=>rangeFor(b)===R);A.cur=A.queue[0]}
+ layoutRows(A);G.aisle=A;G.view='aisle';A.gap=nearestGap(A);sfx('step');playSong('aisle');
+ if(search){if(A.lost)say('Aisle '+R.lab+'. “'+G.hunt.b.title+'” ('+G.hunt.b.call+') is a Nonfiction book lost on a Fiction shelf. Spot the sparkle ✨, then B: TAKE.');else{say('Not in '+R.lab+' — no sparkle here. Try another aisle.');A.exitT=1.6}}
+ else say('Aisle '+R.lab+'. Find the spot for '+A.cur.call+(A.cur.sec==='FIC'?' ('+A.cur.lab+')':'')+'. ▼ low shelf · A: CLIMB the stool');if(G.onAisle)G.onAisle(R)}
+function lostAt(A){if(!A.lost)return -1;for(let r=0;r<3;r++){const i=A.rows[r].indexOf(A.lost);if(i>=0)return{r,i}}return -1}
+function searchTake(A){const L0=lostAt(A);if(L0!==-1&&L0.r===A.reach&&(A.gap===L0.i||A.gap===L0.i+1)){A.rows[L0.r].splice(L0.i,1);layoutRows(A);A.lost=null;G.hunt.got=true;sfx('good');addScore(50);A.good=null;say('Found it! “'+G.hunt.b.title+'” ('+G.hunt.b.call+'). Bring it to the reader.');A.exitT=1.1}
+ else{sfx('click');say(L0!==-1&&L0.r!==A.reach?'Not on this shelf — the sparkle ✨ is '+(L0.r<A.reach?'higher up'+(L0.r===0?' (A: CLIMB the stool)':''):'lower down (▼)')+'.':'Not that one — move the arrow next to the sparkling book ✨.')}}
 function layoutRows(A){for(const row of A.rows){let x=SHX0+2;for(const b of row){b.x=x;x+=b.w}}}
 function gapXs(A,r){const row=A.rows[r],xs=[];let x=SHX0+2;xs.push(x);for(const b of row){x+=b.w;xs.push(x)}return xs}
 function nearestGap(A){const xs=gapXs(A,A.reach);let bi=0,bd=1e9;xs.forEach((x,i)=>{const d=Math.abs(x-A.x);if(d<bd){bd=d;bi=i}});return bi}
@@ -558,7 +566,7 @@ function aisleUpdate(dt){const A=G.aisle;if(A.flag)A.flag.t-=dt;if(A.good)A.good
  if(PRESS.u){if(A.reach===2)A.reach=1;else if(A.reach===1)say('Top shelf? Press A to climb the step stool.');sfx('click')}
  if(PRESS.a){A.reach=A.reach===0?1:0;sfx('step')}
  A.gap=nearestGap(A);
- if(PRESS.b){if(A.x<SHX0-4){exitAisle();return}placeBook(A)}}
+ if(PRESS.b){if(A.x<SHX0-4){exitAisle();return}if(A.search)searchTake(A);else placeBook(A)}}
 function placeBook(A){const b=A.cur;if(!b)return;const r=A.reach,i=A.gap,[pv,nx]=neighbors(A,r,i);const k=b.key;
  const okL=!pv||cmpKey(pv.key,k)<=0,okR=!nx||cmpKey(k,nx.key)<=0;
  if(okL&&okR){const o={key:k,lab:b.lab,col:b.col,w:5,h:15,isNew:true};A.rows[r].splice(i,0,o);layoutRows(A);G.cart.books.splice(G.cart.books.indexOf(b),1);A.queue.shift();A.good={t:.8,o};sfx('good');addScore(100);G.shelved=(G.shelved||0)+1;
@@ -567,7 +575,8 @@ function placeBook(A){const b=A.cur;if(!b)return;const r=A.reach,i=A.gap,[pv,nx]
  else{G.mistakes++;addScore(-20);sfx('wrong');const xs=gapXs(A,r);A.flag={t:1.3,x:xs[i],r};
   const lab=o=>o?(o.lab):'—';say('✗ Wrong spot: '+lab(pv)+' | '+lab(nx)+'. '+(!okL?'It goes EARLIER — ◀ left'+(r>0?' or a higher shelf':''):'It goes LATER — ▶ right'+(r<2?' or a lower shelf':''))+'.');G.flagsN=(G.flagsN||0)+1}}
 function exitAisle(){G.view='floor';G.aisle=null;sfx('step');playSong(G.song||'floor');if(G.onAisleExit)G.onAisleExit()}
-function aisleDraw(){const F=LY.field,V=sideView(),A=G.aisle;const ox=V.ox,Fy=V.Fy;
+function aisleView(){const F=LY.field,land=!LY.portrait;const Zs=Math.max(1.6,Math.min(F.w/190,(F.h-96)/104));const SW=F.w/Zs,SH=F.h/Zs;const res=94/Zs;return{Zs,SW,SH,ox:Math.floor((SW-200)/2),Fy:Math.floor(Math.max(98,SH-res)),land}}
+function aisleDraw(){const F=LY.field,V=aisleView(),A=G.aisle;const ox=V.ox,Fy=V.Fy;
  g.save();rr(F.x,F.y,F.w,F.h,10);g.clip();g.translate(F.x,F.y);g.scale(V.Zs,V.Zs);g.imageSmoothingEnabled=false;
  // back: the next range across the aisle (dim), carpet floor, ceiling light
  g.fillStyle='#3a2a20';g.fillRect(0,0,V.SW,V.SH);for(let y=0;y<Fy-70;y+=18){g.fillStyle='#2a1c14';g.fillRect(0,y,V.SW,16);g.fillStyle='#4a3424';g.fillRect(0,y+16,V.SW,2);for(let i=0;i<V.SW;i+=3){g.fillStyle=shade(BOOKC[(i*3+y)%16],-.5);g.fillRect(i,y+3+((i*7)%4),3,13-((i*7)%4))}}
@@ -580,46 +589,47 @@ function aisleDraw(){const F=LY.field,V=sideView(),A=G.aisle;const ox=V.ox,Fy=V.
  // books
  for(let r=0;r<3;r++){const by=Fy-ROWY[r];for(const b of A.rows[r]){const x=ox+b.x,h=b.h,c=b.col;g.fillStyle=shade(c,-.3);g.fillRect(x,by-h,b.w,h);g.fillStyle=c;g.fillRect(x,by-h,b.w-1,h);g.fillStyle=shade(c,.3);g.fillRect(x,by-h,1,h);g.fillStyle=shade(c,.5);g.fillRect(x,by-h+2,b.w-1,1);g.fillStyle='#f4ecd0';g.fillRect(x+1,by-4,Math.max(1,b.w-2),2);
    if(A.good&&A.good.o===b){g.fillStyle=`rgba(125,255,138,${A.good.t})`;g.fillRect(x-1,by-h-1,b.w+1,h+1)}}}
+ if(A.lost){const L0=lostAt(A);if(L0!==-1){const o=A.lost,by=Fy-ROWY[L0.r],x=ox+o.x,a=.55+.45*Math.sin(T*6);g.fillStyle=`rgba(255,240,120,${a*.55})`;g.fillRect(x-1,by-o.h-2,o.w+2,o.h+2);g.fillStyle=`rgba(255,250,200,${a})`;g.fillRect(x+2,by-o.h-7,1,5);g.fillRect(x,by-o.h-5,5,1)}}
  // gap caret on the reach row
  const xs=gapXs(A,A.reach),gx=ox+xs[A.gap],gy=Fy-ROWY[A.reach];const bl=.6+.4*Math.sin(T*8);if(A.x>=SHX0-4){g.fillStyle=`rgba(255,225,74,${bl})`;g.fillRect(gx-1,gy-19,2,19);g.beginPath();g.moveTo(gx-4,gy-24);g.lineTo(gx+4,gy-24);g.lineTo(gx,gy-20);g.closePath();g.fill()}
  if(A.flag&&A.flag.t>0){const fx=ox+A.flag.x,fy=Fy-ROWY[A.flag.r];g.fillStyle=`rgba(230,40,40,${Math.min(1,A.flag.t)})`;g.fillRect(fx-1,fy-20,2,20);for(let k=-4;k<=4;k++){g.fillRect(fx+k-1,fy-30+k,2,2);g.fillRect(fx+k-1,fy-30-k,2,2)}}
- // book cart beside her, step stool, DJ (back view, facing the shelf)
+ // book cart beside DJ, step stool, DJ (back view, facing the shelf)
  const cx=ox+6;woodBox(g,cx,Fy-30,22,3,'#7a4e2c');woodBox(g,cx,Fy-14,22,3,'#7a4e2c');g.fillStyle='#5a3418';g.fillRect(cx,Fy-30,2,28);g.fillRect(cx+20,Fy-30,2,28);
  A.queue.forEach((b,i)=>{g.fillStyle=b.col;g.fillRect(cx+3+i*3,Fy-40,3,10)});circ(cx+3,Fy-1,2,'#222');circ(cx+19,Fy-1,2,'#222');
- const dx=ox+clamp(A.x,8,SHX0+SHW);let feet=Fy;if(A.reach===0){woodBox(g,dx-9,Fy-14,18,14,'#c0392b');g.fillStyle='#e0604f';g.fillRect(dx-8,Fy-13,16,2);feet=Fy-14}
+ const gx0=xs[A.gap];let sxo=A.x<SHX0-4?A.x:(gx0-17<SHX0+2?gx0+17:gx0-17);const dx=ox+clamp(sxo,8,SHX0+SHW+12);let feet=Fy;if(A.reach===0){woodBox(g,dx-9,Fy-14,18,14,'#c0392b');g.fillStyle='#e0604f';g.fillRect(dx-8,Fy-13,16,2);feet=Fy-14}
  const fr=A.moving?1+(Math.floor(A.walk)%2):0;
  if(A.reach===2){const s=bigSprite(DJ,0,true);g.drawImage(s,0,0,20,30,Math.round(dx-10),feet-30,20,30);g.fillStyle=DJ_LOOK.p;g.fillRect(dx-8,feet-6,16,6);g.fillStyle=DJ_LOOK.o;g.fillRect(dx-8,feet-2,6,2);g.fillRect(dx+2,feet-2,6,2)}
  else drawPersonBig(DJ,dx,feet,fr,true);
- // the book in her hands, raised toward the reach row
- if(A.cur){const hy=gy-12;g.fillStyle=DJ_LOOK.s;g.fillRect(dx-6,hy+4,3,3);g.fillRect(dx+3,hy+4,3,3);drawBook(dx-4,hy-6,8,13,A.cur.col,SECT[A.cur.sec].col)}
+ // the book in DJ's hands, raised toward the reach row
+ if(A.cur&&A.x>=SHX0-4){const sd=gx>dx?1:-1,hx=dx+sd*9,hy=Math.min(feet-26,gy-10);g.fillStyle=DJ_LOOK.s;g.fillRect(hx-1,hy+8,3,3);drawBook(hx-3,hy-4,7,12,A.cur.col,SECT[A.cur.sec].col)}
  g.restore();
  // screen-space: row range tags, exit, banner
  const s2=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs];
  for(let r=0;r<3;r++){const row=A.rows[r];if(!row.length)continue;const t=short(row[0])+'–'+short(row[row.length-1]);const [x,y]=s2(ox+SHX0+SHW-2,Fy-ROWY[r]-24);font(16);const w=g.measureText(t).width+10;g.fillStyle=r===A.reach?'rgba(255,225,74,.95)':'rgba(20,12,6,.8)';rr(x-w,y-13,w,19,6);g.fill();txt(t,x-w/2,y+1,16,r===A.reach?'#2a1600':'#fff')}
  { const [x,y]=s2(ox+2,Fy-ROWY[0]-34);txt('◀ EXIT',Math.max(F.x+40,x+28),y,16,A.x<SHX0-4?'#ffe14a':'#fff',null,true,'#1a0f08')}
- const [pv,nx]=neighbors(A,A.reach,A.gap);const bx=F.x+8,bw=F.w-16,by=F.y+8;const maxH=(Fy-ROWY[0]-40)*V.Zs-14;
- const L1=A.cur?'✋ '+(A.cur.sec==='FIC'?'FIC · '+A.cur.lab:A.cur.call+' · '+A.cur.title):'All done here!',L2='Spot: '+(pv?pv.lab:'(start)')+'  ◀ ▮ ▶  '+(nx?nx.lab:'(end)'),L3=['TOP shelf (on stool)','MIDDLE shelf','BOTTOM shelf'][A.reach]+' · '+A.R.lab+' · '+A.queue.length+' left';
- const ls=[[L1,'#ffe8a0'],[L2,'#fff'],[L3,'#bfe4ff']];const fit=Math.max(2,Math.floor((maxH-10)/22));const show=ls.slice(0,fit);g.fillStyle='rgba(18,22,34,.88)';rr(bx,by,bw,10+show.length*22,10);g.fill();g.strokeStyle='#5a7ab0';g.lineWidth=2;g.stroke();
- show.forEach((l,i)=>txt(l[0],bx+10,by+25+i*22,fitPx(l[0],bw-20,i===0?18:17,16),l[1],'left',i<2))}
+ const [pv,nx]=neighbors(A,A.reach,A.gap);let bx=F.x+8,bw=F.w-16,by=F.y+8;let maxH=(Fy-ROWY[0]-40)*V.Zs-14;if(V.land&&LY.panel[1]){const pn=LY.panel[1];bx=pn.x+2;bw=pn.w-4;by=F.y;maxH=pn.y-6-by}
+ const L1=A.search?(A.lost?'🔎 Find '+G.hunt.b.call+' “'+G.hunt.b.title+'”':(G.hunt&&G.hunt.got?'✓ Found it!':'🔎 Not in this aisle')):A.cur?'✋ '+(A.cur.sec==='FIC'?'FIC · '+A.cur.lab:A.cur.call+' · '+A.cur.title):'All done here!',L2='Spot: '+(pv?pv.lab:'(start)')+'  ◀ ▮ ▶  '+(nx?nx.lab:'(end)'),L3=['TOP shelf (on stool)','MIDDLE shelf','BOTTOM shelf'][A.reach]+' · '+A.R.lab+(A.search?'':' · '+A.queue.length+' left');
+ let ls=[[L1,'#ffe8a0'],[L2,'#fff'],[L3,'#bfe4ff']];if(V.land){const o=[];ls.forEach((l,i)=>wrap(l[0],bw-20,16,i<2).forEach(t=>o.push([t,l[1],i])));ls=o}const fit=Math.max(2,Math.floor((maxH-10)/22));const show=ls.slice(0,fit);g.fillStyle='rgba(18,22,34,.88)';rr(bx,by,bw,10+show.length*22,10);g.fill();g.strokeStyle='#5a7ab0';g.lineWidth=2;g.stroke();
+ show.forEach((l,i)=>txt(l[0],bx+10,by+25+i*22,V.land?16:fitPx(l[0],bw-20,i===0?18:17,16),l[1],'left',V.land?l[2]<2:i<2))}
 function short(b){return typeof b.key==='number'?String(Math.floor(b.key)).padStart(3,'0'):b.lab.slice(0,3)}
 
 // ===== the five shifts =====
 const LEVELS=[
  {id:'checkout',name:'Check-out Rush',icon:'🪪',song:'desk',limit:150,view:'desk',
   goal:['Patrons are lining up! For each one: take the library card and scan it, then take each book, SCAN it, STAMP the due date and hand it back.','NEW books (yellow sticker) are due in 1 week, regular books in 3 weeks. Turn the stamp dial with A.'],
-  how:'◀ ▶ walk along the desk · B take / scan / stamp / hand over · A at the stamp turns the dial',stars:'★ 5 served · ★★ 6 served · ★★★ all 7 with 2 or fewer mistakes'},
+  how:'◀ ▶ walk along the desk · B take / scan / stamp / hand over · A NEXT walks to the right station (at the stamp it turns the dial)',stars:'★ 5 served · ★★ 6 served · ★★★ all 7 with 2 or fewer mistakes'},
  {id:'sorting',name:'Returns & Sorting',icon:'📚',song:'floor',limit:100,view:'floor',
   goal:['The book drop is overflowing! Take books out (up to 3 at a time) and sort each onto the right cart.','FIC + author = Fiction · numbers like 599.75 = Nonfiction · E or J = Kids · R = Reference.'],
   how:'D-pad walk · B take / place · A cart dash',stars:'★ 12 sorted · ★★ all 16 · ★★★ all 16, 1 or fewer mistakes, 20s to spare'},
  {id:'reshelve',name:'Reshelving',icon:'🛒',song:'floor',limit:180,view:'floor',
   goal:['Push the book cart through the stacks. At the right aisle press B to step in.','Put every book in its exact spot: Fiction A→Z by author, Nonfiction by number. Top shelf first, left to right.'],
-  how:'Floor: D-pad walk · B enter aisle · A dash. Aisle: ◀ ▶ pick the spot · ▼ low shelf · A step stool · B place',stars:'★ all shelved · ★★ 4 or fewer wrong spots · ★★★ 1 or fewer, 60s to spare'},
+  how:'Floor: D-pad walk · B enter aisle · A dash. Aisle: ◀ ▶ pick the spot · ▼ low shelf · A climb the step stool · B place',stars:'★ all shelved · ★★ 4 or fewer wrong spots · ★★★ 1 or fewer, 60s to spare'},
  {id:'overdue',name:'Overdue Books',icon:'📋',song:'desk',limit:180,view:'desk',
   goal:['Patrons are bringing books back. SCAN each return to see the due date.','On time → CART. Late → check them off the LATE LIST, collect the fine at the TILL (25¢ a day) and make change, then CART.'],
-  how:'◀ ▶ walk · B use a station · at the till tap coins (or ◀ ▶ + B), A gives the change',stars:'★ 4 helped · ★★ 5 helped · ★★★ all 6 with 2 or fewer mistakes'},
+  how:'◀ ▶ walk · B use a station · at the till tap coins (or ◀ ▶ + B), A NEXT walks to the next station, or gives the change at the till',stars:'★ 4 helped · ★★ 5 helped · ★★★ all 6 with 2 or fewer mistakes'},
  {id:'saturday',name:'Busy Saturday',icon:'🎈',song:'sat',limit:240,view:'floor',
   goal:['Everything at once! Sort the book drop, help patrons at the DESK (!), clean up the storytime juice spill and find a misplaced book for a reader.','Follow the yellow arrow when you are not sure what is next.'],
-  how:'D-pad walk · B use / take / place · A dash · walk to the DESK and press B to serve',stars:'★ 3 of 4 jobs · ★★ all 4 jobs · ★★★ all 4, 3 or fewer mistakes, 40s to spare'}];
+  how:'D-pad walk · B use / take / place · A dash · walk to the DESK and press B to serve · B SEARCH an aisle for the lost book',stars:'★ 3 of 4 jobs · ★★ all 4 jobs · ★★★ all 4, 3 or fewer mistakes, 40s to spare'}];
 let L=0,G=null,RES=null,POPS=[];
 function say(m){if(!G)return;G.msg=m;G.msgT=3.2}
 function oops(m){if(!G)return;G.mistakes++;addScore(-15);sfx('wrong');say('✗ '+m);const f=G.view==='desk'&&front();if(f)f.pat=Math.max(1,f.pat-18)}
@@ -655,12 +665,12 @@ function setupLevel(i){PNUM=i*3;const lv=LEVELS[i],r=srand(1000+i*77),G0=baseG(i
   G.desk=mkDesk({x:150});G.deskQ=G.desk.queue;G.bin=[];for(const s of ['FIC','NON','KIDS','REF','NON','FIC']){let b;do{b=mkAny(r)}while(b.sec!==s);G.bin.push(b)}G.sorted=0;G.binTotal=6;
   const late=mkReturn(r,true,'bill');G.desk.late=[{name:late.name,marked:false}];G.deskPlan=[[4,mkCheckout(r,1,0)],[45,late],[95,mkCheckout(r,2,.5)]];G.deskN=0;
   G.spill={on:false,x:84,y:396,scrub:0,mopped:false,books:[]};
-  const hb=(()=>{let b;do{b=mkNon(r,580,583)}while(!b);return b})();const HR=RANGES.find(q=>q.id==='FG');G.hunt={on:false,b:hb,R:HR,x:HR.x+100,y:HR.y+6,got:false,done:false,rx:136,ry:54};
+  const hb=(()=>{let b;do{b=mkNon(r,580,583)}while(!b);return b})();const HR=RANGES.find(q=>q.id==='FG');G.hunt={on:false,b:hb,R:HR,x:HR.x+100,y:HR.y+6,got:false,done:false,rx:136,ry:54,row:[0,1,2][(r()*3)|0],pos:.35+r()*.4};
   G.jobs=()=>{const j=[G.sorted>=6,G.deskN>=3&&!G.desk.queue.some(p=>p.state!=='leave')&&G.desk.served>=2,G.spill.on&&G.spill.mopped&&G.spill.books.every(b=>b.got)&&G.spillSorted>=4,G.hunt.done];return j};
   G.spillSorted=0;G.onSorted=b=>{if(b.spill)G.spillSorted++;else G.sorted++;G.checkWin()};
   G.tick=dt=>{while(G.deskN<G.deskPlan.length&&G.t>=G.deskPlan[G.deskN][0]){const p=G.deskPlan[G.deskN][1];p.x=240;G.desk.queue.push(p);G.deskN++;say('🔔 A patron is waiting at the DESK!')}
    if(!G.spill.on&&G.t>=20){G.spill.on=true;for(let k=0;k<4;k++){let b;do{b=mkKids(r)}while(!b);b.spill=true;G.spill.books.push({b,x:62+k*16+(k%2)*4,y:384+(k%2)*22,got:false})}say('🧃 Storytime spill on the Kids rug! Get the mop from the OFFICE closet and pick up the books.');G.floorPeople.push({p:mkPerson(901,true),x:56,y:404,dir:'down',bub:'!'},{p:mkPerson(902,true),x:108,y:410,dir:'down'})}
-   if(!G.hunt.on&&G.t>=60){G.hunt.on=true;G.hunt.t0=G.t;const rd=G.floorPeople[2];rd.bub='?';say('📖 A reader needs “'+G.hunt.b.title+'” ('+G.hunt.b.call+'). It’s misplaced somewhere in the stacks — look for a sparkle ✨.')}
+   if(!G.hunt.on&&G.t>=60){G.hunt.on=true;G.hunt.t0=G.t;const rd=G.floorPeople[2];rd.bub='?';say('📖 A reader needs “'+G.hunt.b.title+'” ('+G.hunt.b.call+'). It’s misplaced somewhere in the stacks — search the aisles (B: SEARCH) and look for a sparkle ✨.')}
    if(G.hunt.on&&!G.hunt.got&&!G.hunt.hinted&&G.t-G.hunt.t0>25){G.hunt.hinted=true;say('Hint: someone saw it in the FICTION G–M stacks.')}
    if(G.hunt.done){G.floorPeople[2].bub=null}if(G.spill.mopped&&G.floorPeople[5])G.floorPeople[5].bub=null};
   G.onPatron=()=>G.checkWin();G.onFine=()=>{};
@@ -753,7 +763,7 @@ function drawIntro(){const lv=LEVELS[L];menuBG();g.fillStyle='rgba(20,10,4,.5)';
  g.fillStyle='rgba(30,18,10,.92)';rr(bx,by,bw,boxH,14);g.fill();g.strokeStyle='#e8c890';g.lineWidth=2;g.stroke();
  lines.slice(0,k).forEach((l,i)=>txt(l,bx+bw/2,by+26+i*22,17,'#fff'));let hy=by+26+k*22;hw.forEach((l,i)=>txt(l,bx+bw/2,hy+i*20,16,'#9fd8ff',null,false));hy+=hw.length*20+4;sw.forEach((l,i)=>txt(l,bx+bw/2,hy+i*20,16,'#ffe14a'));
  const sy=Math.min(H-SAFE.b-66,by+boxH+12);button('start',bx,sy,bw,58,'START!','#2f8a5a',()=>{audioInit();startLevel()},{sz:24})}
-const HOW=[['The controller','It works like an old game pad. The D-pad (left) walks DJ around. B is your action button: take, place, scan, stamp, shelve. A is the helper: a quick cart dash on the floor, the step stool in an aisle, the stamp dial at the desk. You can also drag a finger on the picture to walk. Keyboard: arrows/WASD, X or Space = B, Z = A, P pause, M music.'],
+const HOW=[['The controller','It works like an old game pad. The D-pad (left) walks DJ around. B is your action button: take, place, scan, stamp, shelve. A is the helper: a quick cart dash on the floor, CLIMB/DOWN the step stool in an aisle, and at the desk NEXT walks you to the station your item needs (or flips the stamp dial at STAMP). You can also drag a finger on the picture to walk. Keyboard: arrows/WASD, X or Space = B, Z = A, P pause, M music.'],
  ['On the floor','From above you walk the whole library: the book drop, the four sorting carts (Fiction, Nonfiction, Kids, Reference), the stacks, the desk and the back office. Walk up to something and the label over DJ’s head says what B will do.'],
  ['At the desk','The desk is seen from the side. Walk along it: CART, SCAN, STAMP, LATE LIST, TILL, PATRON. Check-out: card → scan, each book → scan → stamp → hand back. Returns: scan → late? mark the list, take the fine (25¢ a day), make change → cart.'],
  ['Call numbers','Fiction: FIC + the author’s last name, A to Z. Nonfiction: Dewey numbers, low to high (599.75 comes after 599.7). Kids: E (picture books) or J. Reference: R. In an aisle, shelves read top shelf first, left to right — just like a book.']];
@@ -763,8 +773,8 @@ function drawHow(){menuBG();g.fillStyle='rgba(20,10,4,.6)';g.fillRect(0,0,W,H);c
  const y=H-SAFE.b-72,hw=(bw-12)/2;button('hprev',bx,y,hw,56,'◀ Prev','#3a5a9a',()=>{HOWP=(HOWP+HOW.length-1)%HOW.length});button('hnext',bx+hw+12,y,hw,56,HOWP===HOW.length-1?'Done ✓':'Next ▶','#2f8a5a',()=>{if(HOWP===HOW.length-1)go(PREV==='pause'?'pause':'title');else HOWP++})}
 // ---------- play: HUD + pad ----------
 function ctxLabels(){if(!G)return{b:'ACTION',a:'DASH'};if(G.view==='floor'){const t=G.near;return{b:t?t.lab:'ACTION',a:'DASH'}}
- if(G.view==='aisle'){const A=G.aisle;return{b:A&&A.x<SHX0-4?'EXIT':'PLACE',a:A&&A.reach===0?'STEP DOWN':'STOOL'}}
- const D=G.desk;if(D.panel)return{b:'PICK',a:'GIVE'};const s=deskStation();const h=D.hold;let b='ACTION';if(s){b={CART:'CART',SCAN:'SCAN',STAMP:'STAMP',LIST:'MARK LATE',TILL:'FINE',DESK:h?'GIVE':'TAKE'}[s.id]}if(G.deskExit&&D.x<=10&&!h)b='FLOOR';return{b,a:s&&s.id==='STAMP'?'DIAL':'HOP'}}
+ if(G.view==='aisle'){const A=G.aisle;return{b:A&&A.x<SHX0-4?'EXIT':A&&A.search?'TAKE':'PLACE',a:A&&A.reach===0?'DOWN':'CLIMB'}}
+ const D=G.desk;if(D.panel)return{b:'PICK',a:'GIVE'};const s=deskStation();const h=D.hold;let b='ACTION';if(s){b={CART:'CART',SCAN:'SCAN',STAMP:'STAMP',LIST:'MARK',TILL:'FINE',DESK:h?'GIVE':'TAKE'}[s.id]}if(G.deskExit&&D.x<=10&&!h)b='FLOOR';return{b,a:s&&s.id==='STAMP'&&h&&h.t==='book'&&h.scanned&&!h.stamped?'DIAL':'NEXT'}}
 function padPath(cx,cy,a){const h=a/2;g.beginPath();g.moveTo(cx-h,cy-1.5*a);g.lineTo(cx+h,cy-1.5*a);g.lineTo(cx+h,cy-h);g.lineTo(cx+1.5*a,cy-h);g.lineTo(cx+1.5*a,cy+h);g.lineTo(cx+h,cy+h);g.lineTo(cx+h,cy+1.5*a);g.lineTo(cx-h,cy+1.5*a);g.lineTo(cx-h,cy+h);g.lineTo(cx-1.5*a,cy+h);g.lineTo(cx-1.5*a,cy-h);g.lineTo(cx-h,cy-h);g.closePath()}
 function tri(x,y,s,ang,col){g.save();g.translate(x,y);g.rotate(ang);g.beginPath();g.moveTo(s,0);g.lineTo(-s*.7,-s*.8);g.lineTo(-s*.7,s*.8);g.closePath();g.fillStyle=col;g.fill();g.restore()}
 function drawControls(){const Ly=LY,P=Ly.pad,a=P.a,cx=P.cx,cy=P.cy;
@@ -898,7 +908,7 @@ function qaDesk(){const D=G.desk,f=front(),h=D.hold;
  else if(h.t==='card')st='SCAN';else if(h.t==='book'){if(!h.scanned)st='SCAN';else if(!h.stamped){st='STAMP';if(D.dial!==(h.newb?1:3))ab='a'}else st='DESK'}
  else{if(!h.checked)st='SCAN';else if(h.late&&!h.marked)st='LIST';else if(h.late&&!h.paid)st='TILL';else st='CART'}
  const tx=ST_DEF.find(s=>s.id===st).x;if(Math.abs(D.x-tx)>3){if(D.x<tx)QIN.r=1;else QIN.l=1}else qtap(ab)}
-function qaAisle(){const A=G.aisle;if(!A||!A.cur||A.exitT>0)return;const k=A.cur.key;let tr=-1,ti=-1;
+function qaAisle(){const A=G.aisle;if(!A||A.exitT>0)return;if(A.search){const L0=lostAt(A);if(L0===-1)return;const tr=L0.r,ti=L0.i;if(A.reach!==tr){if(tr===0){if(A.reach===2)qtap('u');else qtap('a')}else if(tr===2){if(A.reach===0)qtap('a');else qtap('d')}else{if(A.reach===0)qtap('a');else qtap('u')}return}const gi=nearestGap(A);if(gi!==ti&&gi!==ti+1){qtap(gi<ti?'r':'l');return}qtap('b');return}if(!A.cur)return;const k=A.cur.key;let tr=-1,ti=-1;
  for(let r=0;r<3&&tr<0;r++)for(let i=0;i<=A.rows[r].length;i++){const [pv,nx]=neighbors(A,r,i);if((!pv||cmpKey(pv.key,k)<=0)&&(!nx||cmpKey(k,nx.key)<=0)){tr=r;ti=i;break}}
  if(A.reach!==tr){if(tr===0){if(A.reach===2)qtap('u');else qtap('a')}else if(tr===2){if(A.reach===0)qtap('a');else qtap('d')}else{if(A.reach===0)qtap('a');else qtap('u')}return}
  const gi=nearestGap(A);if(gi!==ti){qtap(gi<ti?'r':'l');return}qtap('b')}
@@ -913,7 +923,7 @@ function autoPlay(dt){for(const k in QA.taps){QIN[k]=0}QA.taps={};for(const k in
   if(G.spill.on&&!G.spill.mopped){if(!G.mop)return qaUse(CLOSET,'closet',10.5);return qaUse({x:G.spill.x-10,y:G.spill.y-6,w:20,h:12},'puddle')}
   if(G.mop)return qaUse(CLOSET,'closet2',10.5,'closet');
   const sb=G.spill.on&&G.spill.books.find(b=>!b.got);if(sb)return qaUse({x:sb.x-4,y:sb.y-3,w:8,h:6},'sb'+sb.x,6,'sb'+G.spill.books.indexOf(sb));
-  if(G.hunt.on&&!G.hunt.got)return qaUse({x:G.hunt.x-6,y:G.hunt.R.y,w:12,h:12},'hunt');if(G.hunt.got&&!G.hunt.done)return qaUse({x:G.hunt.rx-6,y:G.hunt.ry-8,w:12,h:14},'reader');
+  if(G.hunt.on&&!G.hunt.got){const R=G.hunt.R;return qaUse({x:R.x+R.w/2-6,y:R.y,w:12,h:12},'hunt',null,'hunt'+R.id)}if(G.hunt.got&&!G.hunt.done)return qaUse({x:G.hunt.rx-6,y:G.hunt.ry-8,w:12,h:14},'reader');
   if(G.bin.length)return qaUse(BIN,'bin');return qaGo({x:DESK.x+60,y:DESK.y-4,w:40,h:6},'idle')}}
 window.__T={get state(){return state},get L(){return L},get G(){return G},get RES(){return RES},open:openLevel,start:startLevel,go,save,LEVELS,BTN,finish,unlockAll(){save.unlocked=LEVELS.length;persist()}};
 boot();
