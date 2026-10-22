@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>DJ&#x27;s Library Hustle</title><!--og--><meta name="description" content="DJ runs the library: check out books at the desk, sort the book drop, push the cart through the stacks and shelve every book in call-number order, collect late fines and make change, then survive a Busy Saturday. 5 shifts, NES-style controls, soft library music."><meta property="og:type" content="website"><meta property="og:site_name" content="Peter&#x27;s Arcade"><meta property="og:title" content="DJ&#x27;s Library Hustle"><meta property="og:description" content="DJ runs the library: check out books at the desk, sort the book drop, push the cart through the stacks and shelve every book in call-number order, collect late fines and make change, then survive a Busy Saturday. 5 shifts, NES-style controls, soft library music."><meta property="og:url" content="https://ploug76.github.io/djs-library-hustle/"><meta property="og:image" content="https://ploug76.github.io/djs-library-hustle/cover.png"><meta property="og:image:secure_url" content="https://ploug76.github.io/djs-library-hustle/cover.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="DJ&#x27;s Library Hustle game cover: pixel-art librarian DJ at the circulation desk"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="DJ&#x27;s Library Hustle"><meta name="twitter:description" content="DJ runs the library: check out books at the desk, sort the book drop, push the cart through the stacks and shelve every book in call-number order, collect late fines and make change, then survive a Busy Saturday. 5 shifts, NES-style controls, soft library music."><meta name="twitter:image" content="https://ploug76.github.io/djs-library-hustle/cover.png"><!--/og-->
-<meta name="theme-color" content="#3a2414"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style id="dk44">/* every tap target 44px+ (this game only) */html body #dock .dk{height:44px!important;line-height:40px!important;border-radius:22px!important;font-size:16px!important;padding:0 14px!important}html body #dock .dk{min-width:44px!important}html body #dock .dk.ic{width:44px!important;padding:0!important}html body #dockHint{padding-right:54px!important}html body #dockHintX{width:44px!important;height:44px!important;margin-top:-22px!important;border-radius:22px!important;right:4px!important;font-size:18px!important}html body #smpBuy{height:44px!important;line-height:40px!important;border-radius:22px!important}html body #shareToast{height:44px!important;line-height:40px!important;border-radius:22px!important}</style><meta name="theme-color" content="#3a2414"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="DJ Library">
 <style>html,body{margin:0;height:100%;overflow:hidden;background:#1a120c;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
 canvas{position:fixed;left:0;top:0;display:block;touch-action:none}#sp{position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -370,7 +370,9 @@ function floorDraw(){const F=LY.field,d=G.dj;Z=fieldZ();const vw=F.w/Z,vh=F.h/Z;
  g.restore();
  // signs in screen space (16px+)
  g.save();rr(F.x,F.y,F.w,F.h,10);g.clip();
- const sign=(s,wx,wy,col,bg)=>{const [x,y]=w2s(wx,wy);if(x<F.x-80||x>F.x+F.w+80||y<F.y-20||y>F.y+F.h+20)return;const p=16;font(p);const w=g.measureText(s).width+12;g.fillStyle=bg||'rgba(30,18,10,.82)';rr(x-w/2,y-p,w,p+8,7);g.fill();if(col){g.fillStyle=col;g.fillRect(x-w/2+3,y-p+3,4,p+2)}txt(s,x+(col?3:0),y+1,p,'#fff')};
+ const sign=(s,wx,wy,col,bg)=>{let [x,y]=w2s(wx,wy);if(y<F.y-20||y>F.y+F.h+20)return;const p=16;font(p);const w=g.measureText(s).width+12+(col?8:0);
+  // keep every sign fully inside the picture (slide it in from the edge) so call-number ranges are never cut off
+  if(x+w/2<F.x-60||x-w/2>F.x+F.w+60)return;x=clamp(x,F.x+6+w/2,F.x+F.w-6-w/2);y=clamp(y,F.y+p+4,F.y+F.h-12);g.fillStyle=bg||'rgba(30,18,10,.82)';rr(x-w/2,y-p,w,p+8,7);g.fill();if(col){g.fillStyle=col;g.fillRect(x-w/2+3,y-p+3,4,p+2)}txt(s,x+(col?3:0),y+1,p,'#fff')};
  for(const R of RANGES)sign(R.lab,R.x+R.w/2,R.y-16,SECT[R.sec].col);sign('REFERENCE',330,40,SECT.REF.col);sign('KIDS',80,342,SECT.KIDS.col);
  for(const c of CARTS)sign(c.sec,c.x+13,c.y-8,null,SECT[c.sec].col);sign('BOOK DROP',BIN.x+12,BIN.y-6);sign('DESK',DESK.x+DESK.w/2,DESK.y-18);sign('OFFICE',340,428);sign('READING ROOM',150,46,null,'rgba(20,60,40,.8)');
  if(G.near){const [x,y]=w2s(G.dj.x,G.dj.y-24);txt('B: '+G.near.lab,x,y-6,16,'#ffe14a',null,true,'#1a0f08')}
@@ -482,7 +484,7 @@ function drawPersonBig(o,x,feet,frame,back,clipY){const s=bigSprite(o,frame,back
 function drawItemSmall(it,x,y){if(!it)return;if(it.t==='card'){g.fillStyle='#2a6ad0';g.fillRect(x-4,y-3,9,6);g.fillStyle='#fff';g.fillRect(x-3,y-2,3,2);g.fillStyle='#f2b322';g.fillRect(x+1,y,3,1)}
  else{const b=it.b;drawBook(x-5,y-4,10,7,b.col,SECT[b.sec].col);if(it.newb){g.fillStyle='#ffe14a';g.fillRect(x+1,y-4,4,3)}if(it.stamped){g.fillStyle='#d03a3a';g.fillRect(x-3,y-2,3,2)}}}
 function deskDraw(){const F=LY.field,V=sideView(),D=G.desk;buildDeskArt(V);const ox=V.ox,Fy=V.Fy;
- g.save();rr(F.x,F.y,F.w,F.h,10);g.clip();g.translate(F.x,F.y);g.scale(V.Zs,V.Zs);g.imageSmoothingEnabled=false;g.drawImage(DESKBG,0,0);{const tp=Math.max(4,Fy-150),sy=tp>78?Math.floor(tp*0.22)+8+28:tp-18;if(tp>36){const sx=ox+100;g.fillStyle='#3a2a1a';g.fillRect(sx-30,sy-14,1,8);g.fillRect(sx+29,sy-14,1,8);rr(sx-38,sy-7,76,15,3);g.fillStyle='#2f6b4f';g.fill();g.strokeStyle='#f4ecd8';g.lineWidth=1;g.stroke();g.fillStyle='#fff4dc';g.font='800 '+(16/V.Zs*1.2).toFixed(2)+'px Trebuchet MS,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('CIRCULATION',sx,sy+1)}}
+ g.save();rr(F.x,F.y,F.w,F.h,10);g.clip();g.translate(F.x,F.y);g.scale(V.Zs,V.Zs);g.imageSmoothingEnabled=false;g.drawImage(DESKBG,0,0);{G.signAt=null;const tp=Math.max(4,Fy-150),sy=tp>78?Math.floor(tp*0.22)+8+28:tp-18;if(tp>36){const sx=ox+100;g.fillStyle='#3a2a1a';g.fillRect(sx-30,sy-14,1,8);g.fillRect(sx+29,sy-14,1,8);rr(sx-38,sy-7,76,15,3);g.fillStyle='#2f6b4f';g.fill();g.strokeStyle='#f4ecd8';g.lineWidth=1;g.stroke();G.signAt=[sx,sy+1]}}
  // clock
  const cx=ox+180,cy=Math.max(14,Fy-140);if(cy<Fy-70){circ(cx,cy,8,'#5a3418');circ(cx,cy,7,'#fffaf0');g.strokeStyle='#222';g.lineWidth=1;const m=(G.t/G.limit)*TAU*2;g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.sin(m)*5,cy-Math.cos(m)*5);g.moveTo(cx,cy);g.lineTo(cx+Math.sin(m/12+1)*3.5,cy-Math.cos(m/12+1)*3.5);g.stroke()}
  // return cart (left)
@@ -510,6 +512,7 @@ function deskDraw(){const F=LY.field,V=sideView(),D=G.desk;buildDeskArt(V);const
  // station highlight
  if(st){g.fillStyle='rgba(255,225,74,.35)';g.fillRect(ox+st.x-12,Fy-31,24,2)}
  g.restore();
+const s2a=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs]; if(G.signAt){const [x,y]=s2a(G.signAt[0],G.signAt[1]);txt('CIRCULATION',x,y+6,Math.max(16,Math.min(20,Math.floor(V.Zs*9))),'#fff4dc',null,true)}
  // labels on the counter front (screen space, staggered rows so 16px text never collides)
  const s2=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs];
  ST_DEF.forEach((s,i)=>{if(!activeST().includes(s))return;const [x,y]=s2(ox+s.x,Fy-(i%2?7:18));const on=st&&st.id===s.id;font(16);const w=g.measureText(ST_LAB[s.id]).width+10;g.fillStyle=on?'#ffe14a':'rgba(30,16,8,.78)';rr(x-w/2,y-15,w,21,6);g.fill();txt(ST_LAB[s.id],x,y+1,16,on?'#2a1600':'#fff')});
@@ -524,7 +527,7 @@ function deskPanel(V){const F=LY.field,D=G.desk,f=front();const x=F.x+8,w=F.w-16
  if(D.readout)lines.push([D.readout,'#9fffb0']);
  if(G.useList&&D.late.length){lines.push(['📋 LATE LIST (25¢ a day):','#ffb0a0']);const row=D.late.map(e=>(e.marked?'☑ ':'☐ ')+e.name).join('   ');lines.push([row,'#fff'])}
  const lh=21;let hh=10+lines.length*lh;const fit=Math.max(2,Math.floor((maxH-10)/lh));const show=lines.slice(0,fit);hh=10+show.length*lh;
- g.fillStyle='rgba(18,28,24,.86)';rr(x,y,w,hh,10);g.fill();g.strokeStyle='#6a8a5a';g.lineWidth=2;g.stroke();
+ G.deskPanelBot=y+hh;g.fillStyle='rgba(18,28,24,.86)';rr(x,y,w,hh,10);g.fill();g.strokeStyle='#6a8a5a';g.lineWidth=2;g.stroke();
  show.forEach((l,i)=>{const p=fitPx(l[0],w-16,16,16);g.save();g.beginPath();g.rect(x+4,y,w-8,hh);g.clip();txt(l[0],x+8,y+24+i*lh,p,l[1],'left',false);g.restore()})}
 function drawChangePanel(){const F=LY.field,P=G.desk.panel,need=P.pay-P.fine,got=P.tray.reduce((a,b)=>a+b,0);const w=Math.min(F.w-16,380),x=F.x+(F.w-w)/2,h=Math.min(F.h-16,262),y=F.y+Math.max(8,(F.h-h)/2-20);
  g.fillStyle='rgba(0,0,0,.45)';g.fillRect(F.x,F.y,F.w,F.h);g.fillStyle='#24302a';rr(x,y,w,h,14);g.fill();g.strokeStyle='#ffe14a';g.lineWidth=3;g.stroke();
@@ -575,7 +578,14 @@ function placeBook(A){const b=A.cur;if(!b)return;const r=A.reach,i=A.gap,[pv,nx]
  else{G.mistakes++;addScore(-20);sfx('wrong');const xs=gapXs(A,r);A.flag={t:1.3,x:xs[i],r};
   const lab=o=>o?(o.lab):'—';say('✗ Wrong spot: '+lab(pv)+' | '+lab(nx)+'. '+(!okL?'It goes EARLIER — ◀ left'+(r>0?' or a higher shelf':''):'It goes LATER — ▶ right'+(r<2?' or a lower shelf':''))+'.');G.flagsN=(G.flagsN||0)+1}}
 function exitAisle(){G.view='floor';G.aisle=null;sfx('step');playSong(G.song||'floor');if(G.onAisleExit)G.onAisleExit()}
-function aisleView(){const F=LY.field,land=!LY.portrait;const Zs=Math.max(1.6,Math.min(F.w/190,(F.h-96)/104));const SW=F.w/Zs,SH=F.h/Zs;const res=94/Zs;return{Zs,SW,SH,ox:Math.floor((SW-200)/2),Fy:Math.floor(Math.max(98,SH-res)),land}}
+// Aisle camera: zoomed in so spines are big; the view scrolls along the shelf to follow the marker.
+// Portrait: info panel on top, hint bubble at the bottom. Landscape: info panel + hint live in the side columns, so the shelf gets the full height.
+const CASEH=86;
+function aisleView(){const F=LY.field,land=!LY.portrait,A=G.aisle;const topR=land?8:100,botR=land?10:96;
+ const Zs=clamp(Math.min(F.w/88,(F.h-topR-botR)/CASEH),1.6,4.6);const SW=F.w/Zs,SH=F.h/Zs;const extra=Math.max(0,(F.h-topR-botR)-CASEH*Zs);const Fy=Math.floor((F.h-botR-extra/2)/Zs);
+ const L0=-2,R0=SHX0+SHW+12;let cam;if(SW>=R0-L0)cam=L0-(SW-(R0-L0))/2;else{const fx=A?(A.x<SHX0-4?A.x:gapXs(A,A.reach)[A.gap]):SHX0;cam=clamp(fx-SW/2,L0,R0-SW)}
+ if(A){if(A.cam==null)A.cam=cam;A.cam+=(cam-A.cam)*.18;cam=A.cam}
+ return{Zs,SW,SH,ox:Math.round(-cam*Zs)/Zs,Fy,land}}
 function aisleDraw(){const F=LY.field,V=aisleView(),A=G.aisle;const ox=V.ox,Fy=V.Fy;
  g.save();rr(F.x,F.y,F.w,F.h,10);g.clip();g.translate(F.x,F.y);g.scale(V.Zs,V.Zs);g.imageSmoothingEnabled=false;
  // back: the next range across the aisle (dim), carpet floor, ceiling light
@@ -591,7 +601,7 @@ function aisleDraw(){const F=LY.field,V=aisleView(),A=G.aisle;const ox=V.ox,Fy=V
    if(A.good&&A.good.o===b){g.fillStyle=`rgba(125,255,138,${A.good.t})`;g.fillRect(x-1,by-h-1,b.w+1,h+1)}}}
  if(A.lost){const L0=lostAt(A);if(L0!==-1){const o=A.lost,by=Fy-ROWY[L0.r],x=ox+o.x,a=.55+.45*Math.sin(T*6);g.fillStyle=`rgba(255,240,120,${a*.55})`;g.fillRect(x-1,by-o.h-2,o.w+2,o.h+2);g.fillStyle=`rgba(255,250,200,${a})`;g.fillRect(x+2,by-o.h-7,1,5);g.fillRect(x,by-o.h-5,5,1)}}
  // gap caret on the reach row
- const xs=gapXs(A,A.reach),gx=ox+xs[A.gap],gy=Fy-ROWY[A.reach];const bl=.6+.4*Math.sin(T*8);if(A.x>=SHX0-4){g.fillStyle=`rgba(255,225,74,${bl})`;g.fillRect(gx-1,gy-19,2,19);g.beginPath();g.moveTo(gx-4,gy-24);g.lineTo(gx+4,gy-24);g.lineTo(gx,gy-20);g.closePath();g.fill()}
+ const xs=gapXs(A,A.reach),gx=ox+xs[A.gap],gy=Fy-ROWY[A.reach];const bl=.6+.4*Math.sin(T*8);if(A.x>=SHX0-4){const mw=Math.max(2.4,9/V.Zs);g.fillStyle='rgba(20,10,0,.85)';g.fillRect(gx-mw/2-.8,gy-21,mw+1.6,21);g.fillStyle=`rgba(255,225,74,${bl})`;g.fillRect(gx-mw/2,gy-20.4,mw,20.4);g.fillStyle='#1a0f08';g.beginPath();g.moveTo(gx-5.2,gy-27.5);g.lineTo(gx+5.2,gy-27.5);g.lineTo(gx,gy-20.5);g.closePath();g.fill();g.fillStyle='#ffe14a';g.beginPath();g.moveTo(gx-4,gy-27);g.lineTo(gx+4,gy-27);g.lineTo(gx,gy-21.5);g.closePath();g.fill()}
  if(A.flag&&A.flag.t>0){const fx=ox+A.flag.x,fy=Fy-ROWY[A.flag.r];g.fillStyle=`rgba(230,40,40,${Math.min(1,A.flag.t)})`;g.fillRect(fx-1,fy-20,2,20);for(let k=-4;k<=4;k++){g.fillRect(fx+k-1,fy-30+k,2,2);g.fillRect(fx+k-1,fy-30-k,2,2)}}
  // book cart beside DJ, step stool, DJ (back view, facing the shelf)
  const cx=ox+6;woodBox(g,cx,Fy-30,22,3,'#7a4e2c');woodBox(g,cx,Fy-14,22,3,'#7a4e2c');g.fillStyle='#5a3418';g.fillRect(cx,Fy-30,2,28);g.fillRect(cx+20,Fy-30,2,28);
@@ -605,10 +615,10 @@ function aisleDraw(){const F=LY.field,V=aisleView(),A=G.aisle;const ox=V.ox,Fy=V
  g.restore();
  // screen-space: row range tags, exit, banner
  const s2=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs];
- for(let r=0;r<3;r++){const row=A.rows[r];if(!row.length)continue;const t=short(row[0])+'–'+short(row[row.length-1]);const [x,y]=s2(ox+SHX0+SHW-2,Fy-ROWY[r]-24);font(16);const w=g.measureText(t).width+10;g.fillStyle=r===A.reach?'rgba(255,225,74,.95)':'rgba(20,12,6,.8)';rr(x-w,y-13,w,19,6);g.fill();txt(t,x-w/2,y+1,16,r===A.reach?'#2a1600':'#fff')}
- { const [x,y]=s2(ox+2,Fy-ROWY[0]-34);txt('◀ EXIT',Math.max(F.x+40,x+28),y,16,A.x<SHX0-4?'#ffe14a':'#fff',null,true,'#1a0f08')}
- const [pv,nx]=neighbors(A,A.reach,A.gap);let bx=F.x+8,bw=F.w-16,by=F.y+8;let maxH=(Fy-ROWY[0]-40)*V.Zs-14;if(V.land&&LY.panel[1]){const pn=LY.panel[1];bx=pn.x+2;bw=pn.w-4;by=F.y;maxH=pn.y-6-by}
- const L1=A.search?(A.lost?'🔎 Find '+G.hunt.b.call+' “'+G.hunt.b.title+'”':(G.hunt&&G.hunt.got?'✓ Found it!':'🔎 Not in this aisle')):A.cur?'✋ '+(A.cur.sec==='FIC'?'FIC · '+A.cur.lab:A.cur.call+' · '+A.cur.title):'All done here!',L2='Spot: '+(pv?pv.lab:'(start)')+'  ◀ ▮ ▶  '+(nx?nx.lab:'(end)'),L3=['TOP shelf (on stool)','MIDDLE shelf','BOTTOM shelf'][A.reach]+' · '+A.R.lab+(A.search?'':' · '+A.queue.length+' left');
+ for(let r=0;r<3;r++){const row=A.rows[r];if(!row.length)continue;const t=short(row[0])+'–'+short(row[row.length-1]);let [x,y]=s2(ox+SHX0+SHW-2,Fy-ROWY[r]-24);x=Math.min(x,F.x+F.w-6);font(16);const w=g.measureText(t).width+10;g.fillStyle=r===A.reach?'rgba(255,225,74,.95)':'rgba(20,12,6,.8)';rr(x-w,y-13,w,19,6);g.fill();txt(t,x-w/2,y+1,16,r===A.reach?'#2a1600':'#fff')}
+ { const [x,y]=s2(ox+2,Fy-ROWY[0]-24);txt('◀ EXIT',Math.max(F.x+44,x+30),y,16,A.x<SHX0-4?'#ffe14a':'#fff',null,true,'#1a0f08')}
+ const [pv,nx]=neighbors(A,A.reach,A.gap);let bx=F.x+8,bw=F.w-16,by=F.y+8;let maxH=92;if(V.land&&LY.panel[0]){const pn=LY.panel[0];bx=pn.x+2;bw=pn.w-4;by=F.y;maxH=pn.y-6-by}
+ const L1=A.search?(A.lost?'🔎 Find '+G.hunt.b.call+' “'+G.hunt.b.title+'”':(G.hunt&&G.hunt.got?'✓ Found it!':'🔎 Not in this aisle')):A.cur?'✋ '+(A.cur.sec==='FIC'?'FIC · '+A.cur.lab:A.cur.call+' · '+A.cur.title):'All done here!',L2=(V.land?'':'Spot: ')+(pv?pv.lab:'(start)')+(V.land?' ◀▮▶ ':'  ◀ ▮ ▶  ')+(nx?nx.lab:'(end)'),L3=['TOP shelf'+(V.land?'':' (on stool)'),'MIDDLE shelf','BOTTOM shelf'][A.reach]+(V.land?'':' · '+A.R.lab)+(A.search?'':' · '+A.queue.length+' left');
  let ls=[[L1,'#ffe8a0'],[L2,'#fff'],[L3,'#bfe4ff']];if(V.land){const o=[];ls.forEach((l,i)=>wrap(l[0],bw-20,16,i<2).forEach(t=>o.push([t,l[1],i])));ls=o}const fit=Math.max(2,Math.floor((maxH-10)/22));const show=ls.slice(0,fit);g.fillStyle='rgba(18,22,34,.88)';rr(bx,by,bw,10+show.length*22,10);g.fill();g.strokeStyle='#5a7ab0';g.lineWidth=2;g.stroke();
  show.forEach((l,i)=>txt(l[0],bx+10,by+25+i*22,V.land?16:fitPx(l[0],bw-20,i===0?18:17,16),l[1],'left',V.land?l[2]<2:i<2))}
 function short(b){return typeof b.key==='number'?String(Math.floor(b.key)).padStart(3,'0'):b.lab.slice(0,3)}
@@ -623,7 +633,7 @@ const LEVELS=[
   how:'D-pad walk · B take / place · A cart dash',stars:'★ 12 sorted · ★★ all 16 · ★★★ all 16, 1 or fewer mistakes, 20s to spare'},
  {id:'reshelve',name:'Reshelving',icon:'🛒',song:'floor',limit:180,view:'floor',
   goal:['Push the book cart through the stacks. At the right aisle press B to step in.','Put every book in its exact spot: Fiction A→Z by author, Nonfiction by number. Top shelf first, left to right.'],
-  how:'Floor: D-pad walk · B enter aisle · A dash. Aisle: ◀ ▶ pick the spot · ▼ low shelf · A climb the step stool · B place',stars:'★ all shelved · ★★ 4 or fewer wrong spots · ★★★ 1 or fewer, 60s to spare'},
+  how:'Floor: D-pad walk · B enter aisle · A dash. Aisle: ◀ ▶ pick the spot · ▼ down a shelf · ▲ back up a shelf · A climb the step stool (top shelf) · B place · hold ◀ at the left end of the aisle to leave',stars:'★ all shelved · ★★ 4 or fewer wrong spots · ★★★ 1 or fewer, 60s to spare'},
  {id:'overdue',name:'Overdue Books',icon:'📋',song:'desk',limit:180,view:'desk',
   goal:['Patrons are bringing books back. SCAN each return to see the due date.','On time → CART. Late → check them off the LATE LIST, collect the fine at the TILL (25¢ a day) and make change, then CART.'],
   how:'◀ ▶ walk · B use a station · at the till tap coins (or ◀ ▶ + B), A NEXT walks to the next station, or gives the change at the till',stars:'★ 4 helped · ★★ 5 helped · ★★★ all 6 with 2 or fewer mistakes'},
@@ -631,7 +641,7 @@ const LEVELS=[
   goal:['Everything at once! Sort the book drop, help patrons at the DESK (!), clean up the storytime juice spill and find a misplaced book for a reader.','Follow the yellow arrow when you are not sure what is next.'],
   how:'D-pad walk · B use / take / place · A dash · walk to the DESK and press B to serve · B SEARCH an aisle for the lost book',stars:'★ 3 of 4 jobs · ★★ all 4 jobs · ★★★ all 4, 3 or fewer mistakes, 40s to spare'}];
 let L=0,G=null,RES=null,POPS=[];
-function say(m){if(!G)return;G.msg=m;G.msgT=3.2}
+function say(m){if(!G)return;G.msg=m;G.msgT=G.view==='desk'?2.2:3.2}
 function oops(m){if(!G)return;G.mistakes++;addScore(-15);sfx('wrong');say('✗ '+m);const f=G.view==='desk'&&front();if(f)f.pat=Math.max(1,f.pat-18)}
 function addScore(n){if(G)G.score=Math.max(0,G.score+n)}
 function pop(s,x,y,col,mode){let sx,sy;const F=LY.field;if(mode===true){sx=F.x+F.w*.7;sy=F.y+F.h*.42}else if(mode==='aisle'){sx=F.x+F.w/2;sy=F.y+F.h*.45}else{[sx,sy]=w2s(x,y)}POPS.push({s,x:sx,y:sy,col,t:0})}
@@ -704,10 +714,13 @@ let state='title',BTN=[],BTNDOWN=null,T=0,PREV='title',HOWP=0;
 const menuBtns=BTN;
 const IB=()=>48,LAND=()=>LY&&!LY.portrait;
 function computeLayout(){const L=SAFE.l,R=W-SAFE.r,T0=SAFE.t,B=H-SAFE.b,aw=R-L,ah=B-T0;const portrait=ah>=aw*1.12;const o={L,R,T:T0,B,aw,ah,portrait};const hh=56;o.hud={x:L+6,y:T0+4,w:aw-12,h:hh-6};
- if(portrait){const a=CL(Math.floor(Math.min(aw/7,ah*.085)),56,72),br=CL(Math.round(a*.62),33,44),ph=3*a+40,py=B-4-ph;
+ if(portrait){const a=CL(Math.floor(Math.min(aw/7,ah*.085)),56,72),ph=3*a+40,py=B-4-ph;let br=CL(Math.round(a*.62),33,44),ml=16,mr=16,bg=16,pg=aw-ml-3*a-4*br-bg-mr;
+  // narrow phones: tighten margins, then shrink A/B (never under 56px across) so the D-pad and B hit areas can't overlap
+  if(pg<28){ml=10;mr=10;bg=12;pg=aw-ml-3*a-4*br-bg-mr}if(pg<20){ml=6;mr=6;bg=10;br=Math.max(28,Math.min(br,Math.floor((aw-ml-3*a-bg-mr-20)/4)));pg=aw-ml-3*a-4*br-bg-mr}
+  o.hit={pad:CL(Math.floor((pg-2)/2),0,14),ab:0};o.hit.ab=CL(pg-2-o.hit.pad,0,12);
   o.field={x:L+6,y:T0+hh+2,w:aw-12,h:py-8-(T0+hh+2)};o.panel=[{x:L+4,y:py,w:aw-8,h:B-2-py}];
-  const cy=py+ph/2+4;o.pad={cx:L+16+1.5*a,cy,a};const ax=R-16-br,bx=ax-2*br-16;o.ab={b:{cx:bx,cy:cy+br*.38,r:br},a:{cx:ax,cy:cy-br*.38,r:br}}}
- else{const a=CL(Math.floor(ah*.15),56,68),br=CL(Math.round(a*.6),33,40),side=Math.max(3*a+28,4*br+44);
+  const cy=py+ph/2+4;o.pad={cx:L+ml+1.5*a,cy,a};const ax=R-mr-br,bx=ax-2*br-bg;o.ab={b:{cx:bx,cy:cy+br*.38,r:br},a:{cx:ax,cy:cy-br*.38,r:br}}}
+ else{o.hit={pad:14,ab:12};const a=CL(Math.floor(ah*.15),56,68),br=CL(Math.round(a*.6),33,40),side=Math.max(3*a+28,4*br+44);
   o.field={x:L+side,y:T0+hh+2,w:aw-2*side,h:ah-hh-6};const cy=B-14-1.5*a;o.pad={cx:L+side/2,cy,a};const rx=R-side/2;
   o.ab={b:{cx:rx-br-6,cy:B-34-br,r:br},a:{cx:rx+br+6,cy:B-34-br-br*.75,r:br}};o.panel=[{x:L+2,y:cy-1.5*a-34,w:side-6,h:B-2-(cy-1.5*a-34)},{x:R-side+4,y:o.ab.a.cy-br-34,w:side-6,h:B-2-(o.ab.a.cy-br-34)}]}
  return o}
@@ -766,7 +779,7 @@ function drawIntro(){const lv=LEVELS[L];menuBG();g.fillStyle='rgba(20,10,4,.5)';
 const HOW=[['The controller','It works like an old game pad. The D-pad (left) walks DJ around. B is your action button: take, place, scan, stamp, shelve. A is the helper: a quick cart dash on the floor, CLIMB/DOWN the step stool in an aisle, and at the desk NEXT walks you to the station your item needs (or flips the stamp dial at STAMP). You can also drag a finger on the picture to walk. Keyboard: arrows/WASD, X or Space = B, Z = A, P pause, M music.'],
  ['On the floor','From above you walk the whole library: the book drop, the four sorting carts (Fiction, Nonfiction, Kids, Reference), the stacks, the desk and the back office. Walk up to something and the label over DJ’s head says what B will do.'],
  ['At the desk','The desk is seen from the side. Walk along it: CART, SCAN, STAMP, LATE LIST, TILL, PATRON. Check-out: card → scan, each book → scan → stamp → hand back. Returns: scan → late? mark the list, take the fine (25¢ a day), make change → cart.'],
- ['Call numbers','Fiction: FIC + the author’s last name, A to Z. Nonfiction: Dewey numbers, low to high (599.75 comes after 599.7). Kids: E (picture books) or J. Reference: R. In an aisle, shelves read top shelf first, left to right — just like a book.']];
+ ['Call numbers','Fiction: FIC + the author’s last name, A to Z. Nonfiction: Dewey numbers, low to high (599.75 comes after 599.7). Kids: E (picture books) or J. Reference: R. In an aisle, shelves read top shelf first, left to right — just like a book. Aisle controls: ◀ ▶ slide the yellow marker, ▼ down a shelf, ▲ back up a shelf, A climbs the step stool for the top shelf, B places the book. To leave, hold ◀ at the left end of the aisle.']];
 function drawHow(){menuBG();g.fillStyle='rgba(20,10,4,.6)';g.fillRect(0,0,W,H);const top=SAFE.t+10;button('back',SAFE.l+10,top,100,48,'◀ Back','#6a4a2a',()=>go(PREV==='pause'?'pause':'title'),{sz:18});
  const p=HOW[HOWP],bw=Math.min(W-40,420),bx=(W-bw)/2;txt(`How to Play ${HOWP+1}/${HOW.length}`,W/2,top+86,fs(22),'#ffe8a0',null,true);txt(p[0],W/2,top+122,fs(22),'#fff',null,true);
  const ls=wrap(p[1],bw-20,18,false);const lh=Math.min(25,(H-SAFE.b-90-(top+150))/Math.max(1,ls.length));ls.forEach((l,k)=>txt(l,W/2,top+156+k*lh,lh<22?16:18,'#fff',null,false));
@@ -792,7 +805,12 @@ function drawHUD(){const Hd=LY.hud,sz=IB(),top=Hd.y;iconBtn('pause',W-SAFE.r-sz-
  const x=Hd.x,w=W-SAFE.r-sz*2-24-x;g.fillStyle='rgba(30,18,10,.9)';rr(x,top,w,sz,12);g.fill();g.strokeStyle='#e8c890';g.lineWidth=2;g.stroke();
  const left=Math.max(0,Math.ceil(G.limit-G.t));const tcol=left<=15?'#ff8a7a':'#fff';const info=`⏱ ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}   ${G.prog()}`;
  const p=fitPx(info,w-16,19,16);txt(info,x+w/2,top+21,p,tcol);txt('Score '+Math.round(G.score)+'  ·  '+LEVELS[L].name,x+w/2,top+42,fitPx('Score '+Math.round(G.score)+'  ·  '+LEVELS[L].name,w-16,16,16),'#ffe14a',null,false)}
-function drawMsg(){const F=LY.field;if(G.msgT>0&&G.msg){const p=16;const ln=wrap(G.msg,F.w-36,p,true).slice(0,3);const hh=ln.length*21+14;const y=F.y+F.h-hh-8;g.globalAlpha=Math.min(1,G.msgT*2);g.fillStyle='rgba(20,12,6,.9)';rr(F.x+8,y,F.w-16,hh,12);g.fill();g.strokeStyle=G.msg[0]==='✗'?'#ff7a6a':'#e8c890';g.lineWidth=2;g.stroke();ln.forEach((l,k)=>txt(l,F.x+F.w/2,y+24+k*21,p,G.msg[0]==='✗'?'#ffd0c8':'#fff',null,true));g.globalAlpha=1}
+// where the hint bubble goes: landscape -> the free strip above the D-pad panel (never over the play area);
+// portrait desk -> just under the desk monitor (the stations, labels and patrons are at the bottom); otherwise the bottom of the field.
+function msgBox(n0){const F=LY.field;if(!LY.portrait&&LY.panel[1]){const pn=LY.panel[G&&G.view==='aisle'?1:0];const top=F.y,bot=pn.y-6;return{x:pn.x+2,w:pn.w-4,top,bot,mode:'top'}}
+ if(G&&G.view==='desk'&&G.deskPanelBot)return{x:F.x+8,w:F.w-16,top:G.deskPanelBot+6,bot:F.y+F.h,mode:'top'};return{x:F.x+8,w:F.w-16,top:F.y,bot:F.y+F.h-8,mode:'bottom'}}
+function drawMsg(){const F=LY.field;if(G.msgT>0&&G.msg){const p=16;let M=msgBox();let ln=wrap(G.msg,M.w-20,p,true);let maxL=Math.max(1,Math.floor((M.bot-M.top-14)/21));if(M.mode==='top'&&ln.length>maxL&&!LY.portrait){const pn=LY.panel[1];const ln2=wrap(G.msg,pn.w-24,p,true),m2=Math.floor((pn.y-6-F.y-14)/21);if(G.view!=='aisle'&&ln2.length<=m2){M={x:pn.x+2,w:pn.w-4,top:F.y,bot:pn.y-6,mode:'top'};ln=ln2;maxL=m2}else{M={x:F.x+8,w:F.w-16,top:F.y,bot:F.y+F.h-8,mode:'bottom'};ln=wrap(G.msg,M.w-20,p,true)}}ln=ln.slice(0,M.mode==='top'?maxL:3);const hh=ln.length*21+14;const y=M.mode==='top'?M.top:M.bot-hh;
+ const fade=G.view==='desk'?Math.min(1,G.msgT*3):Math.min(1,G.msgT*2);g.globalAlpha=fade;g.fillStyle='rgba(20,12,6,.9)';rr(M.x,y,M.w,hh,12);g.fill();g.strokeStyle=G.msg[0]==='✗'?'#ff7a6a':'#e8c890';g.lineWidth=2;g.stroke();ln.forEach((l,k)=>txt(l,M.x+M.w/2,y+24+k*21,p,G.msg[0]==='✗'?'#ffd0c8':'#fff',null,true));g.globalAlpha=1}
  if(G.intro>0){G.intro-=1/60;const a=Math.min(1,G.intro);g.globalAlpha=a;const p=fs(28);g.fillStyle='rgba(20,12,6,.85)';rr(F.x+16,F.y+F.h*.36,F.w-32,p+52,16);g.fill();txt(LEVELS[L].name,F.x+F.w/2,F.y+F.h*.36+p+8,p,'#ffe8a0',null,true);txt('Shift starts — go!',F.x+F.w/2,F.y+F.h*.36+p+38,18,'#fff',null,true);g.globalAlpha=1}
  for(const q of POPS){q.t+=1/60;q.y-=.6}POPS=POPS.filter(q=>q.t<1.2);for(const q of POPS){g.globalAlpha=Math.min(1,(1.2-q.t)*2.5);txt(q.s,q.x,q.y,18,q.col,null,true,'#000');g.globalAlpha=1}}
 function drawPause(){g.fillStyle='rgba(20,10,4,.86)';g.fillRect(0,0,W,H);if(LAND())return drawPauseL();const bw=Math.min(W-60,320),bx=(W-bw)/2;let y=SAFE.t+80;txt('PAUSED',W/2,y,fs(34),'#ffe8a0',null,true);y+=36;const bh=56,g2=12;
@@ -839,8 +857,8 @@ function go(s){PREV=state;state=s;BTNDOWN=null;resetInput();if(s==='title'||s===
 const IN={l:0,r:0,u:0,d:0,a:0,b:0},PRESS={},LATCH={},KEYS={},QIN={};let PREVIN={},ptrs=new Map();
 const inR=(b,x,y,p=0)=>x>=b.x-p&&x<=b.x+b.w+p&&y>=b.y-p&&y<=b.y+b.h+p;
 function padDirs(x,y){const P=LY.pad,dx=x-P.cx,dy=y-P.cy,ax=Math.abs(dx),ay=Math.abs(dy),o=[];if(Math.hypot(dx,dy)<P.a*.32)return o;const Tn=2.414;if(ax>ay/Tn)o.push(dx>0?'r':'l');if(ay>ax/Tn)o.push(dy>0?'d':'u');return o}
-function onPad(x,y){const P=LY.pad,h=P.a*1.5+14;return Math.abs(x-P.cx)<=h&&Math.abs(y-P.cy)<=h}
-function abAt(x,y,pad=12){const o=[];for(const k of ['b','a']){const q=LY.ab[k];if(Math.hypot(x-q.cx,y-q.cy)<=q.r+pad)o.push(k)}return o}
+function onPad(x,y){const P=LY.pad,h=P.a*1.5+LY.hit.pad;return Math.abs(x-P.cx)<=h&&Math.abs(y-P.cy)<=h}
+function abAt(x,y,pad){if(pad==null)pad=LY.hit.ab;let best=null,bd=1e9;for(const k of ['b','a']){const q=LY.ab[k];const d=Math.hypot(x-q.cx,y-q.cy)-q.r;if(d<=pad&&d<bd){bd=d;best=k}}return best?[best]:[]}// nearest button only: A and B never share a hit spot
 function inPanel(x,y){return LY.panel.some(p=>inR(p,x,y,0))}
 function vib(){try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
 function recompute(){const h={l:0,r:0,u:0,d:0,a:0,b:0};for(const q of ptrs.values()){if(q.pad)for(const k of q.pad)h[k]=1;if(q.ab)for(const k of q.ab)h[k]=1;if(q.sw)for(const k of q.sw)h[k]=1}
