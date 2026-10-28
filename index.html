@@ -11,7 +11,8 @@ if(v&&v!=='0')sessionStorage.setItem(K,v.replace(/[^a-z0-9-]/gi,'').slice(0,16)|
 const s=sessionStorage.getItem(K);window.__SAMPLE=s||null;if(!s)return;
 document.querySelectorAll('link[rel=manifest]').forEach(l=>l.remove());
 if('serviceWorker' in navigator){try{navigator.serviceWorker.register=()=>new Promise(()=>{})}catch(e){}}
-addEventListener('beforeinstallprompt',e=>{e.preventDefault();e.stopImmediatePropagation()},true);window.__ACS=[];['AudioContext','webkitAudioContext'].forEach(n=>{const O=window[n];if(!O)return;const W=function(...a){const c=new O(...a);window.__ACS.push(c);return c};W.prototype=O.prototype;try{Object.setPrototypeOf(W,O)}catch(e){}window[n]=W})}catch(e){}})()</script><!--/sample--></head><body>
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();e.stopImmediatePropagation()},true);window.__ACS=[];['AudioContext','webkitAudioContext'].forEach(n=>{const O=window[n];if(!O)return;const W=function(...a){const c=new O(...a);window.__ACS.push(c);return c};W.prototype=O.prototype;try{Object.setPrototypeOf(W,O)}catch(e){}window[n]=W})}catch(e){}})()</script><!--/sample--><style id="dj16">/* v4: overlay text 16px+ and the More free samples link 44px tall */html body #dockHint,html body #dockHint.smpc,html body .smpc{font-size:16px!important}html body #shareToast{font-size:16px!important}html body #smpBuy{font-size:16px!important}html body #smpLockTxt,html body #smpLock p{font-size:16px!important}html body #smpLock .lnk,html body #smpLockMore{display:flex!important;align-items:center;justify-content:center;min-height:44px;font-size:16px!important;margin-top:6px!important}</style>
+</head><body>
 <canvas id="cv" aria-label="DJ&#x27;s Library Hustle game"></canvas><div id="sp"></div>
 <script>window.addEventListener('error',e=>{(window.__ERR=window.__ERR||[]).push(String(e.message))});
 // ===== DJ's Library Hustle — core (canvas, save, text, soft music, sfx) =====
@@ -513,7 +514,7 @@ function deskDraw(){const F=LY.field,V=sideView(),D=G.desk;buildDeskArt(V);const
  // station highlight
  if(st){g.fillStyle='rgba(255,225,74,.35)';g.fillRect(ox+st.x-12,Fy-31,24,2)}
  g.restore();
-const s2a=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs]; if(G.signAt){const [x,y]=s2a(G.signAt[0],G.signAt[1]);txt('CIRCULATION',x,y+6,Math.max(16,Math.min(20,Math.floor(V.Zs*9))),'#fff4dc',null,true)}
+const s2a=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs]; if(G.signAt){const [x,y]=s2a(G.signAt[0],G.signAt[1]);txt('CIRCULATION',x,y+6,Math.max(16,Math.min(20,Math.floor(V.Zs*9))),'#fff4dc',null,true);G.signBot=y+6+Math.max(10,8*V.Zs)}else G.signBot=0
  // labels on the counter front (screen space, staggered rows so 16px text never collides)
  const s2=(nx,ny)=>[F.x+nx*V.Zs,F.y+ny*V.Zs];
  ST_DEF.forEach((s,i)=>{if(!activeST().includes(s))return;const [x,y]=s2(ox+s.x,Fy-(i%2?7:18));const on=st&&st.id===s.id;font(16);const w=g.measureText(ST_LAB[s.id]).width+10;g.fillStyle=on?'#ffe14a':'rgba(30,16,8,.78)';rr(x-w/2,y-15,w,21,6);g.fill();txt(ST_LAB[s.id],x,y+1,16,on?'#2a1600':'#fff')});
@@ -527,6 +528,7 @@ function deskPanel(V){const F=LY.field,D=G.desk,f=front();const x=F.x+8,w=F.w-16
  if(G.useStamp)lines.push(['🗓 Stamp dial: '+(D.dial===1?'1 WEEK':'3 WEEKS')+'  (A at STAMP)','#bfe4ff']);
  if(D.readout)lines.push([D.readout,'#9fffb0']);
  if(G.useList&&D.late.length){lines.push(['📋 LATE LIST (25¢ a day):','#ffb0a0']);const row=D.late.map(e=>(e.marked?'☑ ':'☐ ')+e.name).join('   ');lines.push([row,'#fff'])}
+ {const wl=[];for(const l of lines)for(const t of wrap(l[0],w-16,16,false))wl.push([t,l[1]]);lines.length=0;lines.push(...wl)} // v4: wrap long lines (portrait cut off the 4th line)
  const lh=21;let hh=10+lines.length*lh;const fit=Math.max(2,Math.floor((maxH-10)/lh));const show=lines.slice(0,fit);hh=10+show.length*lh;
  G.deskPanelBot=y+hh;g.fillStyle='rgba(18,28,24,.86)';rr(x,y,w,hh,10);g.fill();g.strokeStyle='#6a8a5a';g.lineWidth=2;g.stroke();
  show.forEach((l,i)=>{const p=fitPx(l[0],w-16,16,16);g.save();g.beginPath();g.rect(x+4,y,w-8,hh);g.clip();txt(l[0],x+8,y+24+i*lh,p,l[1],'left',false);g.restore()})}
@@ -809,7 +811,7 @@ function drawHUD(){const Hd=LY.hud,sz=IB(),top=Hd.y;iconBtn('pause',W-SAFE.r-sz-
 // where the hint bubble goes: landscape -> the free strip above the D-pad panel (never over the play area);
 // portrait desk -> just under the desk monitor (the stations, labels and patrons are at the bottom); otherwise the bottom of the field.
 function msgBox(n0){const F=LY.field;if(!LY.portrait&&LY.panel[1]){const pn=LY.panel[G&&G.view==='aisle'?1:0];const top=F.y,bot=pn.y-6;return{x:pn.x+2,w:pn.w-4,top,bot,mode:'top'}}
- if(G&&G.view==='desk'&&G.deskPanelBot)return{x:F.x+8,w:F.w-16,top:G.deskPanelBot+6,bot:F.y+F.h,mode:'top'};return{x:F.x+8,w:F.w-16,top:F.y,bot:F.y+F.h-8,mode:'bottom'}}
+ if(G&&G.view==='desk'&&G.deskPanelBot)return{x:F.x+8,w:F.w-16,top:Math.max(G.deskPanelBot,G.signBot||0)+6,bot:F.y+F.h,mode:'top'};return{x:F.x+8,w:F.w-16,top:F.y,bot:F.y+F.h-8,mode:'bottom'}}
 function drawMsg(){const F=LY.field;if(G.msgT>0&&G.msg){const p=16;let M=msgBox();let ln=wrap(G.msg,M.w-20,p,true);let maxL=Math.max(1,Math.floor((M.bot-M.top-14)/21));if(M.mode==='top'&&ln.length>maxL&&!LY.portrait){const pn=LY.panel[1];const ln2=wrap(G.msg,pn.w-24,p,true),m2=Math.floor((pn.y-6-F.y-14)/21);if(G.view!=='aisle'&&ln2.length<=m2){M={x:pn.x+2,w:pn.w-4,top:F.y,bot:pn.y-6,mode:'top'};ln=ln2;maxL=m2}else{M={x:F.x+8,w:F.w-16,top:F.y,bot:F.y+F.h-8,mode:'bottom'};ln=wrap(G.msg,M.w-20,p,true)}}ln=ln.slice(0,M.mode==='top'?maxL:3);const hh=ln.length*21+14;const y=M.mode==='top'?M.top:M.bot-hh;
  const fade=G.view==='desk'?Math.min(1,G.msgT*3):Math.min(1,G.msgT*2);g.globalAlpha=fade;g.fillStyle='rgba(20,12,6,.9)';rr(M.x,y,M.w,hh,12);g.fill();g.strokeStyle=G.msg[0]==='✗'?'#ff7a6a':'#e8c890';g.lineWidth=2;g.stroke();ln.forEach((l,k)=>txt(l,M.x+M.w/2,y+24+k*21,p,G.msg[0]==='✗'?'#ffd0c8':'#fff',null,true));g.globalAlpha=1}
  if(G.intro>0){G.intro-=1/60;const a=Math.min(1,G.intro);g.globalAlpha=a;const p=fs(28);g.fillStyle='rgba(20,12,6,.85)';rr(F.x+16,F.y+F.h*.36,F.w-32,p+52,16);g.fill();txt(LEVELS[L].name,F.x+F.w/2,F.y+F.h*.36+p+8,p,'#ffe8a0',null,true);txt('Shift starts — go!',F.x+F.w/2,F.y+F.h*.36+p+38,18,'#fff',null,true);g.globalAlpha=1}
@@ -1155,7 +1157,7 @@ function layoutDock(){const s=safe(),R=tapRects(),inst=canInstall();ib.style.dis
    const r=dock.getBoundingClientRect(),dr=[r.left,r.top,r.width,r.height];if(!inView(dr,s))continue;if(R.some(q=>hit(dr,q)))continue;if(covered(dr))continue;return dr}}
  dock.style.display='none';return null}
 function layoutHint(dr){const s=safe(),R=tapRects();hint.style.display='block';const maxW=Math.min(340,innerWidth-s.l-s.r-16);
- const cands=SMP?[]:[[s.l+8,null]];if(dr)cands.push([s.l+8,dr[1]+dr[3]+6]);if(SMP){cands.push([s.l+8,null]);for(let y=s.t+8;y<innerHeight-s.b-40;y+=12)cands.push([s.l+8,y]);for(let y=s.t+8;y<innerHeight-s.b-40;y+=12)cands.push([Math.max(s.l+8,innerWidth-s.r-8-maxW),y])}else cands.push([s.l+8,s.t+8]);const minW=SMP?226:200;
+ const cands=[[s.l+8,null]];if(dr)cands.push([s.l+8,dr[1]+dr[3]+6]);if(SMP){cands.push([s.l+8,null]);for(let y=s.t+8;y<innerHeight-s.b-40;y+=12)cands.push([s.l+8,y]);for(let y=s.t+8;y<innerHeight-s.b-40;y+=12)cands.push([Math.max(s.l+8,innerWidth-s.r-8-maxW),y])}else cands.push([s.l+8,s.t+8]);const minW=SMP?226:200;
  for(const [x0,y0] of cands)for(let w=maxW;w>=minW;w-=20){const x=SMP&&x0>s.l+8?innerWidth-s.r-8-w:x0;hint.style.width=w+'px';const h=hint.offsetHeight;const y=y0===null?innerHeight-s.b-10-h:y0;const hr=[x,y,w,h];if(!inView(hr,s))continue;if(dr&&hit(hr,dr,2))continue;if(R.some(q=>hit(hr,q)))continue;hint.style.left=x+'px';hint.style.top=y+'px';if(covered(hr))continue;return hr}
  hint.style.display='none';return null}
 function tick(){const v=vis();if(INLINE){dock.style.display=v?'flex':'none';ib.style.display=canInstall()?'':'none';hint.style.display=v&&hintOn&&canInstall()?'block':'none';
