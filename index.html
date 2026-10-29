@@ -574,7 +574,7 @@ function neighbors(A,r,i){const row=A.rows[r];const prev=i>0?row[i-1]:(r>0?A.row
 function aisleUpdate(dt){const A=G.aisle;if(A.flag)A.flag.t-=dt;if(A.good)A.good.t-=dt;
  if(A.exitT>0){A.exitT-=dt;if(A.exitT<=0)exitAisle();return}
  const xs=gapXs(A,A.reach);
- // D-pad: a tap moves exactly one gap; holding glides
+ // swipe: a quick swipe moves exactly one gap; holding the swipe glides
  if(PRESS.l||PRESS.r){const i=nearestGap(A),ni=i+(PRESS.r?1:-1);if(ni<0){A.x=Math.max(8,A.x-14)}else A.x=xs[Math.min(ni,xs.length-1)];A.holdT=0;A.walk+=1}
  else if(IN.l||IN.r){A.holdT+=dt;if(A.holdT>.28){A.x=clamp(A.x+(IN.r?1:-1)*48*dt,8,SHX0+SHW);A.walk+=dt*8}}
  A.moving=IN.l||IN.r;A.face=IN.l?-1:IN.r?1:A.face;
@@ -644,16 +644,16 @@ const LEVELS=[
   how:'◀ ▶ walk along the desk · B take / scan / stamp / hand over · A NEXT walks to the right station (at the stamp it turns the dial)',stars:'★ 5 served · ★★ 6 served · ★★★ all 7 with 2 or fewer mistakes'},
  {id:'sorting',name:'Returns & Sorting',icon:'📚',song:'floor',limit:100,view:'floor',
   goal:['The book drop is overflowing! Take books out (up to 3 at a time) and sort each onto the right cart.','FIC + author = Fiction · numbers like 599.75 = Nonfiction · E or J = Kids · R = Reference.'],
-  how:'D-pad walk · B take / place · A cart dash',stars:'★ 12 sorted · ★★ all 16 · ★★★ all 16, 1 or fewer mistakes, 20s to spare'},
+  how:'Swipe to walk · B take / place · A cart dash',stars:'★ 12 sorted · ★★ all 16 · ★★★ all 16, 1 or fewer mistakes, 20s to spare'},
  {id:'reshelve',name:'Reshelving',icon:'🛒',song:'floor',limit:180,view:'floor',
   goal:['Push the book cart through the stacks. At the right aisle press B to step in.','Put every book in its exact spot: Fiction A→Z by author, Nonfiction by number. Top shelf first, left to right.'],
-  how:'Floor: D-pad walk · B enter aisle · A dash. Aisle: ◀ ▶ pick the spot · ▼ down a shelf · ▲ back up a shelf · A climb the step stool (top shelf) · B place · hold ◀ at the left end of the aisle to leave',stars:'★ all shelved · ★★ 4 or fewer wrong spots · ★★★ 1 or fewer, 60s to spare'},
+  how:'Floor: swipe to walk · B enter aisle · A dash. Aisle: swipe ◀ ▶ to pick the spot · swipe ▼ down a shelf · swipe ▲ back up a shelf · A climb the step stool (top shelf) · B place · swipe ◀ and hold at the left end of the aisle to leave',stars:'★ all shelved · ★★ 4 or fewer wrong spots · ★★★ 1 or fewer, 60s to spare'},
  {id:'overdue',name:'Overdue Books',icon:'📋',song:'desk',limit:180,view:'desk',
   goal:['Patrons are bringing books back. SCAN each return to see the due date.','On time → CART. Late → check them off the LATE LIST, collect the fine at the TILL (25¢ a day) and make change, then CART.'],
-  how:'◀ ▶ walk · B use a station · at the till tap coins (or ◀ ▶ + B), A NEXT walks to the next station, or gives the change at the till',stars:'★ 4 helped · ★★ 5 helped · ★★★ all 6 with 2 or fewer mistakes'},
+  how:'Swipe ◀ ▶ to walk · B use a station · at the till tap coins (or swipe ◀ ▶ + B), A NEXT walks to the next station, or gives the change at the till',stars:'★ 4 helped · ★★ 5 helped · ★★★ all 6 with 2 or fewer mistakes'},
  {id:'saturday',name:'Busy Saturday',icon:'🎈',song:'sat',limit:240,view:'floor',
   goal:['Everything at once! Sort the book drop, help patrons at the DESK (!), clean up the storytime juice spill and find a misplaced book for a reader.','Follow the yellow arrow when you are not sure what is next.'],
-  how:'D-pad walk · B use / take / place · A dash · walk to the DESK and press B to serve · B SEARCH an aisle for the lost book',stars:'★ 3 of 4 jobs · ★★ all 4 jobs · ★★★ all 4, 3 or fewer mistakes, 40s to spare'}];
+  how:'Swipe to walk · B use / take / place · A dash · walk to the DESK and press B to serve · B SEARCH an aisle for the lost book',stars:'★ 3 of 4 jobs · ★★ all 4 jobs · ★★★ all 4, 3 or fewer mistakes, 40s to spare'}];
 let L=0,G=null,RES=null,POPS=[];
 function say(m){if(!G)return;G.msg=m;G.msgT=G.view==='desk'?2.2:3.2}
 function oops(m){if(!G)return;G.mistakes++;addScore(-15);sfx('wrong');say('✗ '+m);const f=G.view==='desk'&&front();if(f)f.pat=Math.max(1,f.pat-18)}
@@ -729,7 +729,7 @@ const menuBtns=BTN;
 const IB=()=>48,LAND=()=>LY&&!LY.portrait;
 function computeLayout(){const L=SAFE.l,R=W-SAFE.r,T0=SAFE.t,B=H-SAFE.b,aw=R-L,ah=B-T0;const portrait=ah>=aw*1.12;const o={L,R,T:T0,B,aw,ah,portrait};const hh=56;o.hud={x:L+6,y:T0+4,w:aw-12,h:hh-6};
  if(portrait){const a=CL(Math.floor(Math.min(aw/7,ah*.085)),56,72),ph=3*a+40,py=B-4-ph;let br=CL(Math.round(a*.62),33,44),ml=16,mr=16,bg=16,pg=aw-ml-3*a-4*br-bg-mr;
-  // narrow phones: tighten margins, then shrink A/B (never under 56px across) so the D-pad and B hit areas can't overlap
+  // narrow phones: tighten margins, then shrink A/B (never under 56px across)
   if(pg<28){ml=10;mr=10;bg=12;pg=aw-ml-3*a-4*br-bg-mr}if(pg<20){ml=6;mr=6;bg=10;br=Math.max(28,Math.min(br,Math.floor((aw-ml-3*a-bg-mr-20)/4)));pg=aw-ml-3*a-4*br-bg-mr}
   o.hit={pad:CL(Math.floor((pg-2)/2),0,14),ab:0};o.hit.ab=CL(pg-2-o.hit.pad,0,12);
   o.field={x:L+6,y:T0+hh+2,w:aw-12,h:py-8-(T0+hh+2)};o.panel=[{x:L+4,y:py,w:aw-8,h:B-2-py}];
@@ -790,10 +790,10 @@ function drawIntro(){const lv=LEVELS[L];menuBG();g.fillStyle='rgba(20,10,4,.5)';
  g.fillStyle='rgba(30,18,10,.92)';rr(bx,by,bw,boxH,14);g.fill();g.strokeStyle='#e8c890';g.lineWidth=2;g.stroke();
  lines.slice(0,k).forEach((l,i)=>txt(l,bx+bw/2,by+26+i*22,17,'#fff'));let hy=by+26+k*22;hw.forEach((l,i)=>txt(l,bx+bw/2,hy+i*20,16,'#9fd8ff',null,false));hy+=hw.length*20+4;sw.forEach((l,i)=>txt(l,bx+bw/2,hy+i*20,16,'#ffe14a'));
  const sy=Math.min(H-SAFE.b-66,by+boxH+12);button('start',bx,sy,bw,58,'START!','#2f8a5a',()=>{audioInit();startLevel()},{sz:24})}
-const HOW=[['The controller','It works like an old game pad. The D-pad (left) walks DJ around. B is your action button: take, place, scan, stamp, shelve. A is the helper: a quick cart dash on the floor, CLIMB/DOWN the step stool in an aisle, and at the desk NEXT walks you to the station your item needs (or flips the stamp dial at STAMP). You can also drag a finger on the picture to walk. Keyboard: arrows/WASD, X or Space = B, Z = A, P pause, M music.'],
+const HOW=[['The controller','Swipe anywhere on the screen to walk DJ around: keep your finger down to keep walking, lift it to stop. B is your action button: take, place, scan, stamp, shelve. A is the helper: a quick cart dash on the floor, CLIMB/DOWN the step stool in an aisle, and at the desk NEXT walks you to the station your item needs (or flips the stamp dial at STAMP). Keyboard: arrows/WASD, X or Space = B, Z = A, P pause, M music.'],
  ['On the floor','From above you walk the whole library: the book drop, the four sorting carts (Fiction, Nonfiction, Kids, Reference), the stacks, the desk and the back office. Walk up to something and the label over DJ’s head says what B will do.'],
  ['At the desk','The desk is seen from the side. Walk along it: CART, SCAN, STAMP, LATE LIST, TILL, PATRON. Check-out: card → scan, each book → scan → stamp → hand back. Returns: scan → late? mark the list, take the fine (25¢ a day), make change → cart.'],
- ['Call numbers','Fiction: FIC + the author’s last name, A to Z. Nonfiction: Dewey numbers, low to high (599.75 comes after 599.7). Kids: E (picture books) or J. Reference: R. In an aisle, shelves read top shelf first, left to right — just like a book. Aisle controls: ◀ ▶ slide the yellow marker, ▼ down a shelf, ▲ back up a shelf, A climbs the step stool for the top shelf, B places the book. To leave, hold ◀ at the left end of the aisle.']];
+ ['Call numbers','Fiction: FIC + the author’s last name, A to Z. Nonfiction: Dewey numbers, low to high (599.75 comes after 599.7). Kids: E (picture books) or J. Reference: R. In an aisle, shelves read top shelf first, left to right — just like a book. Aisle controls: swipe ◀ ▶ to slide the yellow marker, swipe ▼ down a shelf, swipe ▲ back up a shelf, A climbs the step stool for the top shelf, B places the book. To leave, swipe ◀ and hold at the left end of the aisle.']];
 function drawHow(){menuBG();g.fillStyle='rgba(20,10,4,.6)';g.fillRect(0,0,W,H);const top=SAFE.t+10;button('back',SAFE.l+10,top,100,48,'◀ Back','#6a4a2a',()=>go(PREV==='pause'?'pause':'title'),{sz:18});
  const p=HOW[HOWP],bw=Math.min(W-40,420),bx=(W-bw)/2;txt(`How to Play ${HOWP+1}/${HOW.length}`,W/2,top+86,fs(22),'#ffe8a0',null,true);txt(p[0],W/2,top+122,fs(22),'#fff',null,true);
  const ls=wrap(p[1],bw-20,18,false);const lh=Math.min(25,(H-SAFE.b-90-(top+150))/Math.max(1,ls.length));ls.forEach((l,k)=>txt(l,W/2,top+156+k*lh,lh<22?16:18,'#fff',null,false));
@@ -802,15 +802,13 @@ function drawHow(){menuBG();g.fillStyle='rgba(20,10,4,.6)';g.fillRect(0,0,W,H);c
 function ctxLabels(){if(!G)return{b:'ACTION',a:'DASH'};if(G.view==='floor'){const t=G.near;return{b:t?t.lab:'ACTION',a:'DASH'}}
  if(G.view==='aisle'){const A=G.aisle;return{b:A&&A.x<SHX0-4?'EXIT':A&&A.search?'TAKE':'PLACE',a:A&&A.reach===0?'DOWN':'CLIMB'}}
  const D=G.desk;if(D.panel)return{b:'PICK',a:'GIVE'};const s=deskStation();const h=D.hold;let b='ACTION';if(s){b={CART:'CART',SCAN:'SCAN',STAMP:'STAMP',LIST:'MARK',TILL:'FINE',DESK:h?'GIVE':'TAKE'}[s.id]}if(G.deskExit&&D.x<=10&&!h)b='FLOOR';return{b,a:s&&s.id==='STAMP'&&h&&h.t==='book'&&h.scanned&&!h.stamped?'DIAL':'NEXT'}}
-function padPath(cx,cy,a){const h=a/2;g.beginPath();g.moveTo(cx-h,cy-1.5*a);g.lineTo(cx+h,cy-1.5*a);g.lineTo(cx+h,cy-h);g.lineTo(cx+1.5*a,cy-h);g.lineTo(cx+1.5*a,cy+h);g.lineTo(cx+h,cy+h);g.lineTo(cx+h,cy+1.5*a);g.lineTo(cx-h,cy+1.5*a);g.lineTo(cx-h,cy+h);g.lineTo(cx-1.5*a,cy+h);g.lineTo(cx-1.5*a,cy-h);g.lineTo(cx-h,cy-h);g.closePath()}
+function padPath_unused(cx,cy,a){const h=a/2;g.beginPath();g.moveTo(cx-h,cy-1.5*a);g.lineTo(cx+h,cy-1.5*a);g.lineTo(cx+h,cy-h);g.lineTo(cx+1.5*a,cy-h);g.lineTo(cx+1.5*a,cy+h);g.lineTo(cx+h,cy+h);g.lineTo(cx+h,cy+1.5*a);g.lineTo(cx-h,cy+1.5*a);g.lineTo(cx-h,cy+h);g.lineTo(cx-1.5*a,cy+h);g.lineTo(cx-1.5*a,cy-h);g.lineTo(cx-h,cy-h);g.closePath()}
 function tri(x,y,s,ang,col){g.save();g.translate(x,y);g.rotate(ang);g.beginPath();g.moveTo(s,0);g.lineTo(-s*.7,-s*.8);g.lineTo(-s*.7,s*.8);g.closePath();g.fillStyle=col;g.fill();g.restore()}
 function drawControls(){const Ly=LY,P=Ly.pad,a=P.a,cx=P.cx,cy=P.cy;
  for(const pn of Ly.panel){rr(pn.x,pn.y,pn.w,pn.h,18);g.fillStyle='#b9b6bf';g.fill();g.strokeStyle='#efeef2';g.lineWidth=3;g.stroke();rr(pn.x+8,pn.y+8,pn.w-16,pn.h-16,12);g.fillStyle='#2b2833';g.fill()}
  if(Ly.portrait){const pn=Ly.panel[0];txt('LIBRARY',(Ly.ab.b.cx+Ly.ab.a.cx)/2,pn.y+26,16,'#e8c890',null,true)}
- g.save();g.shadowColor='rgba(0,0,0,.5)';g.shadowOffsetY=4;padPath(cx,cy,a);g.fillStyle='#111015';g.fill();g.restore();
- const arm={l:[cx-a,cy],r:[cx+a,cy],u:[cx,cy-a],d:[cx,cy+a]},ang={l:Math.PI,r:0,u:-Math.PI/2,d:Math.PI/2};
- for(const k of ['l','r','u','d']){const [x,y]=arm[k],lit=IN[k];if(lit){rr(x-a/2+3,y-a/2+3,a-6,a-6,8);g.fillStyle='rgba(255,216,74,.85)';g.fill()}tri(x+(k=='l'?-a*.08:k=='r'?a*.08:0),y+(k=='u'?-a*.08:k=='d'?a*.08:0),a*.22,ang[k],lit?'#1b1440':'#8f8c99')}
- circ(cx,cy,a*.22,'#1d1b22');
+ // no D-pad (Peter 10/28): swipe anywhere to walk; a small hint sits where the pad was
+ {const mw=Math.max(60,3*a);txt('SWIPE',cx,cy-4,fitPx('SWIPE',mw,18,16),'#8f8c99',null,true);txt('TO WALK',cx,cy+18,fitPx('TO WALK',mw,18,16),'#8f8c99',null,true)}
  const lab=ctxLabels();
  for(const k of ['b','a']){const q=Ly.ab[k],on=IN[k];const dy=on?2:0;circ(q.cx,q.cy+3,q.r,'#000');circ(q.cx,q.cy+dy,q.r,on?'#ff6a5a':'#d1302f');g.lineWidth=3;g.strokeStyle=on?'#ffd84a':'#7c1515';g.beginPath();g.arc(q.cx,q.cy+dy,q.r,0,TAU);g.stroke();
   circ(q.cx-q.r*.3,q.cy+dy-q.r*.35,q.r*.28,'rgba(255,255,255,.28)');txt(k.toUpperCase(),q.cx,q.cy+dy+q.r*.28,Math.round(q.r*.75),'#fff','center',true,'rgba(0,0,0,.45)');
@@ -819,7 +817,7 @@ function drawHUD(){const Hd=LY.hud,sz=IB(),top=Hd.y;iconBtn('pause',W-SAFE.r-sz-
  const x=Hd.x,w=W-SAFE.r-sz*2-24-x;g.fillStyle='rgba(30,18,10,.9)';rr(x,top,w,sz,12);g.fill();g.strokeStyle='#e8c890';g.lineWidth=2;g.stroke();
  const left=Math.max(0,Math.ceil(G.limit-G.t));const tcol=left<=15?'#ff8a7a':'#fff';const info=`⏱ ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}   ${G.prog()}`;
  const p=fitPx(info,w-16,19,16);txt(info,x+w/2,top+21,p,tcol);txt('Score '+Math.round(G.score)+'  ·  '+LEVELS[L].name,x+w/2,top+42,fitPx('Score '+Math.round(G.score)+'  ·  '+LEVELS[L].name,w-16,16,16),'#ffe14a',null,false)}
-// where the hint bubble goes: landscape -> the free strip above the D-pad panel (never over the play area);
+// where the hint bubble goes: landscape -> the free strip above the controller panel (never over the play area);
 // portrait desk -> just under the desk monitor (the stations, labels and patrons are at the bottom); otherwise the bottom of the field.
 function msgBox(n0){const F=LY.field;if(!LY.portrait&&LY.panel[1]){const pn=LY.panel[G&&G.view==='aisle'?1:0];const top=F.y,bot=pn.y-6;return{x:pn.x+2,w:pn.w-4,top,bot,mode:'top'}}
  if(G&&G.view==='desk'&&G.deskPanelBot)return{x:F.x+8,w:F.w-16,top:Math.max(G.deskPanelBot,G.signBot||0)+6,bot:F.y+F.h,mode:'top'};return{x:F.x+8,w:F.w-16,top:F.y,bot:F.y+F.h-8,mode:'bottom'}}
@@ -867,15 +865,13 @@ function nameRow(show){if(!nrEl){nrEl=document.createElement('div');nrEl.id='nam
  nrEl.style.display=show?'flex':'none';if(show){const inp=nrEl.querySelector('input');inp.value=localStorage.getItem(NK)||'';nrEl.querySelector('button').textContent=inp.value?'🏆 Update':'🏆 Save'}}
 function positionName(){if(!nrEl||!NR)return;const r=nameRect();Object.assign(nrEl.style,{left:r.x+'px',top:NR.y+'px',width:r.w+'px',height:NR.h+'px'})}
 function go(s){PREV=state;state=s;BTNDOWN=null;resetInput();if(s==='title'||s==='levels')playSong('title');nameRow(s==='result'||s==='final')}
-// ---------- input: NES pad (D-pad + B/A, multi-touch, slide/diagonals), drag-on-picture to walk, keyboard ----------
+// ---------- input: B/A buttons (multi-touch), swipe anywhere to walk (hold to keep walking, release to stop), keyboard ----------
 const IN={l:0,r:0,u:0,d:0,a:0,b:0},PRESS={},LATCH={},KEYS={},QIN={};let PREVIN={},ptrs=new Map();
 const inR=(b,x,y,p=0)=>x>=b.x-p&&x<=b.x+b.w+p&&y>=b.y-p&&y<=b.y+b.h+p;
-function padDirs(x,y){const P=LY.pad,dx=x-P.cx,dy=y-P.cy,ax=Math.abs(dx),ay=Math.abs(dy),o=[];if(Math.hypot(dx,dy)<P.a*.32)return o;const Tn=2.414;if(ax>ay/Tn)o.push(dx>0?'r':'l');if(ay>ax/Tn)o.push(dy>0?'d':'u');return o}
-function onPad(x,y){const P=LY.pad,h=P.a*1.5+LY.hit.pad;return Math.abs(x-P.cx)<=h&&Math.abs(y-P.cy)<=h}
 function abAt(x,y,pad){if(pad==null)pad=LY.hit.ab;let best=null,bd=1e9;for(const k of ['b','a']){const q=LY.ab[k];const d=Math.hypot(x-q.cx,y-q.cy)-q.r;if(d<=pad&&d<bd){bd=d;best=k}}return best?[best]:[]}// nearest button only: A and B never share a hit spot
 function inPanel(x,y){return LY.panel.some(p=>inR(p,x,y,0))}
 function vib(){try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
-function recompute(){const h={l:0,r:0,u:0,d:0,a:0,b:0};for(const q of ptrs.values()){if(q.pad)for(const k of q.pad)h[k]=1;if(q.ab)for(const k of q.ab)h[k]=1;if(q.sw)for(const k of q.sw)h[k]=1}
+function recompute(){const h={l:0,r:0,u:0,d:0,a:0,b:0};for(const q of ptrs.values()){if(q.ab)for(const k of q.ab)h[k]=1;if(q.sw)for(const k of q.sw)h[k]=1}
  const km={arrowleft:'l',a:'l',arrowright:'r',d:'r',arrowup:'u',w:'u',arrowdown:'d',s:'d',x:'b',' ':'b',j:'b',enter:'b',z:'a',k:'a',shift:'a'};for(const k in KEYS)if(KEYS[k]&&km[k])h[km[k]]=1;
  for(const k in QIN)if(QIN[k])h[k]=1;for(const k in h){if(h[k]&&!IN[k]){LATCH[k]=1;vib()}IN[k]=h[k]}}
 function resetInput(){ptrs.clear();for(const k in KEYS)KEYS[k]=false;for(const k in QIN)QIN[k]=0;for(const k in IN)IN[k]=0;for(const k in LATCH)LATCH[k]=0;BTNDOWN=null}
@@ -883,12 +879,9 @@ cv.addEventListener('pointerdown',e=>{e.preventDefault();audioInit();const x=e.c
  if(state!=='play'){for(let i=BTN.length-1;i>=0;i--){const b=BTN[i];if(inR(b,x,y,2)){BTNDOWN=b.id;ptrs.set(e.pointerId,{btn:b});return}}return}
  for(let i=BTN.length-1;i>=0;i--){const b=BTN[i];if(inR(b,x,y,2)){sfx('click');b.cb();ptrs.set(e.pointerId,{dead:1});return}}
  try{cv.setPointerCapture(e.pointerId)}catch(_){}
- if(onPad(x,y)){ptrs.set(e.pointerId,{pad:padDirs(x,y)});recompute();return}
  const ab=abAt(x,y);if(ab.length){ptrs.set(e.pointerId,{ab});recompute();return}
- if(inPanel(x,y)){ptrs.set(e.pointerId,{dead:1});return}
  ptrs.set(e.pointerId,{x0:x,y0:y,sw:[]});recompute()},{passive:false});
 cv.addEventListener('pointermove',e=>{const q=ptrs.get(e.pointerId);if(!q||q.dead||q.btn)return;const x=e.clientX,y=e.clientY;
- if(q.pad){const d=padDirs(x,y);if(d.join()!==q.pad.join()){q.pad=d;recompute()}return}
  if(q.ab){const b=abAt(x,y,16);if(b.length&&b.join()!==q.ab.join()){q.ab=b;recompute()}return}
  const dx=x-q.x0,dy=y-q.y0,d=Math.hypot(dx,dy);const sw=[];if(d>14){const Tn=2.414,ax=Math.abs(dx),ay=Math.abs(dy);if(ax>ay/Tn)sw.push(dx>0?'r':'l');if(ay>ax/Tn)sw.push(dy>0?'d':'u')}
  if(d>44){q.x0=x-dx/d*44;q.y0=y-dy/d*44}if(sw.join()!==q.sw.join()){q.sw=sw;recompute()}});
