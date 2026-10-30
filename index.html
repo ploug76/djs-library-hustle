@@ -165,11 +165,22 @@ function hairVariant(map,style,big){const m=map.map(r=>r.split(''));const n=m.le
  if(style==='bun'){const cx=(hw/2)|0;for(let y=0;y<(big?2:1);y++)for(let x=cx-(big?2:1);x<=cx+(big?2:1);x++)m[y][x]=y===0?'i':'h'}
  return m.map(r=>r.join(''))}
 const SPR={};
+/* arm rig + cadence (arm check, Oct 30 2026): pixel arms swing with the stride frames (side: upper arm + forearm bend forward / reach back,
+   front/back + big sprites: the forward-swinging forearm bends up at the elbow), opposite the stepping leg; the walk cycle is
+   stride A, pass, stride B, pass and its rate is steps/s (walk ~1.75, run ~2.75, max 3) instead of 8-14 frame flips a second */
+function gaitFr(w){return [1,2,3,2][Math.floor(w*2)%4]}/* 1 = stride, arm A forward; 2 = legs passing, arms down; 3 = stride, arm B forward (each stride frame is one step) */
+function armPix(m,kind,frame){if(frame!==1&&frame!==3)return m;frame=frame===3?2:1;const a=m.map(r=>r.split('')),put=(x,y,c)=>{if(a[y]&&a[y][x]!==undefined)a[y][x]=c};
+ if(kind==='side'){put(6,10,'c');put(5,11,'c');put(6,12,'c');put(7,12,'c');
+  if(frame===1){put(6,9,'C');put(7,10,'C');put(8,11,'C');put(9,11,'s')}else{put(5,10,'C');put(4,11,'C');put(3,12,'C');put(2,12,'s')}}
+ else if(kind==='front'){if(frame===1){put(1,12,'.');put(1,11,'s');put(3,11,'c')}else{put(10,12,'.');put(10,11,'S');put(8,11,'c')}}
+ else if(kind==='big'){const L=frame===1;const xs=L?[2,3]:[16,17];for(const y of [28,29])for(const x of xs)put(x,y,'.');
+  for(const x of xs){put(x,26,L?(x===2?'s':'S'):(x===16?'S':'s'));put(x,27,L?(x===2?'s':'S'):(x===16?'S':'s'))}put(L?4:15,25,L?'c':'c')}
+ return a.map(r=>r.join(''))}
 function sprite(key,map,pal,mirror){const k=key+(mirror?'m':'');if(SPR[k])return SPR[k];const h=map.length,w=map[0].length;const [c,x]=mkC(w,h);
  for(let y=0;y<h;y++)for(let i=0;i<w;i++){const ch=map[y][i];if(ch==='.'||ch===' ')continue;const col=pal[ch];if(!col)continue;x.fillStyle=col;x.fillRect(mirror?w-1-i:i,y,1,1)}
  SPR[k]=c;return c}
 const BADGE=["XX...X","X.X..X","X.X..X","X.X..X","XX..X."];
-function bigMap(o,frame,back){let m=BIG.slice();if(frame)m=m.slice(0,35).concat(BIG_WALK[frame-1]);
+function bigMap(o,frame,back){let m=BIG.slice();if(frame)m=armPix(m.slice(0,35).concat(BIG_WALK[(frame===3?1:frame)-1]),'big',frame);
  if(o.noGlasses)m=m.map((r,y)=>y>=8&&y<=10?r.replace(/g/g,'s').replace(/w/g,'s'):r);
  m=hairVariant(m,o.hair||'bob',true);
  if(back)m=m.map((r,y)=>y<=16?r.replace(/[sSgwemr]/g,(ch)=>y>=15&&'sS'.includes(ch)?ch:(y>15?ch:'h')):r.replace(/[bB]/g,'c'));
@@ -179,7 +190,7 @@ function bigSprite(o,frame,back){const key='B'+o.id+'_'+frame+(back?'b':'');if(S
  if(o.badge&&!back){const x=c.getContext('2d');P(x,9,19,8,7,'#f8f4e8');P(x,9,25,8,1,'#b9ad8e');P(x,8,19,1,7,'#d4c7a6');for(let y=0;y<5;y++)for(let i=0;i<6;i++)if(BADGE[y][i]==='X')P(x,10+i,20+y,1,1,'#1d3d8a')}
  return c}
 function smallSprite(o,dir,frame){const d=dir==='left'||dir==='right'?'side':dir;const key='s'+o.id+d+frame+(dir==='left'?'L':'');if(SPR[key])return SPR[key];
- let m=SM[d].slice();if(frame&&SM_WALK[d==='up'?'down':d])m=m.slice(0,15).concat(SM_WALK[d==='up'?'down':d][frame-1]);
+ let m=SM[d].slice();if(frame&&SM_WALK[d==='up'?'down':d])m=armPix(m.slice(0,15).concat(SM_WALK[d==='up'?'down':d][(frame===3?1:frame)-1]),d==='side'?'side':'front',frame);
  if(o.noGlasses)m=m.map((r,y)=>y===4?r.replace(/g/g,'s'):r);m=hairVariant(m,o.hair||'bob',false);
  if(o.pants)m=m.map((r,y)=>y>=13&&y<=16?r.replace(/l/g,'p'):r);
  const c=sprite(key,m,o.pal,dir==='left');if(o.badge&&d==='down'){const x=c.getContext('2d');P(x,7,9,2,2,'#f8f4e8')}return c}
@@ -334,7 +345,7 @@ function floorMove(dt){const d=G.dj;let mx=(IN.r?1:0)-(IN.l?1:0),my=(IN.d?1:0)-(
  if(PRESS.a){if(d.dashCd<=0){d.dash=.45;d.dashCd=1.3;sfx('dash');for(let k=0;k<6;k++)G.fx.push({k:'dust',x:d.x+rnd(-4,4),y:d.y+rnd(-1,2),t:0,vx:-mx*rnd(10,30),vy:-my*rnd(10,30)})}}
  const sp=(G.cart&&G.cart.on?62:72)*(d.dash>0?2.1:1);d.moving=!!(mx||my);
  if(d.moving){const nx=d.x+mx*sp*dt,ny=d.y+my*sp*dt;if(!blocked(nx,d.y))d.x=nx;else if(!blocked(d.x,d.y)){/*slide*/}if(!blocked(d.x,ny))d.y=ny;
-  d.walk+=dt*(d.dash>0?14:9);if(Math.abs(mx)>Math.abs(my))d.dir=mx>0?'right':'left';else d.dir=my>0?'down':'up';
+  d.walk+=dt*(d.dash>0?3:2.75);if(Math.abs(mx)>Math.abs(my))d.dir=mx>0?'right':'left';else d.dir=my>0?'down':'up';
   if(G.cart&&G.cart.on){const tr=G.cart.trail;const l=tr[tr.length-1];if(!l||Math.hypot(l.x-d.x,l.y-d.y)>1.5)tr.push({x:d.x,y:d.y});if(tr.length>80)tr.shift()}}
  else d.walk=0}
 function cartPos(){const tr=G.cart.trail;let acc=0;for(let i=tr.length-1;i>0;i--){acc+=Math.hypot(tr[i].x-tr[i-1].x,tr[i].y-tr[i-1].y);if(acc>=18)return tr[i-1]}return tr[0]||G.dj}
@@ -393,7 +404,7 @@ function floorDraw(){const F=LY.field,d=G.dj;Z=fieldZ();const vw=F.w/Z,vh=F.h/Z;
   g.save();g.translate(ex,ey);g.rotate(a);g.fillStyle='#ffe14a';g.strokeStyle='#3a2200';g.lineWidth=3;g.beginPath();g.moveTo(14,0);g.lineTo(-8,-11);g.lineTo(-8,11);g.closePath();g.stroke();g.fill();g.restore()}}
  g.restore()}
 function bubble(x,y,s){g.fillStyle='#fff';g.fillRect(x-4,y-7,9,8);g.fillRect(x-3,y-8,7,10);g.fillRect(x-1,y+2,2,2);g.fillStyle=s==='!'?'#d0302a':'#2a5ad0';if(s==='!'){g.fillRect(x,y-6,1,4);g.fillRect(x,y-1,1,1)}else{g.fillRect(x-1,y-6,3,1);g.fillRect(x+1,y-5,1,2);g.fillRect(x,y-3,1,1);g.fillRect(x,y-1,1,1)}}
-function drawDJfloor(){const d=G.dj,fr=d.moving?1+(Math.floor(d.walk)%2):0;const s=smallSprite(DJ,d.dir,d.dir==='up'?(fr?fr:0):fr);
+function drawDJfloor(){const d=G.dj,fr=d.moving?gaitFr(d.walk):0;const s=smallSprite(DJ,d.dir,d.dir==='up'?(fr?fr:0):fr);
  g.fillStyle='rgba(0,0,0,.28)';g.fillRect(Math.round(d.x-5),Math.round(d.y-1),10,2);g.drawImage(s,Math.round(d.x-6),Math.round(d.y-18));
  // carried books (stack) and mop
  G.stack&&G.stack.forEach((b,i)=>{const bx=d.dir==='left'?d.x-9:d.dir==='right'?d.x+2:d.x-4,by=d.y-9-i*3;if(d.dir!=='up')drawBook(bx,by,7,3,b.col,SECT[b.sec].col)});
@@ -462,9 +473,9 @@ function deskUpdate(dt){const D=G.desk;D.t+=dt;if(D.flash>0)D.flash-=dt;if(D.sta
   if(p.state==='wait'||idx>0){p.pat-=dt*(G.patRate||3)*(idx===0?1:.35)*(D.panel?.3:1)}if(p.pat<=0)patronDone(p,false);idx++}
  D.queue=D.queue.filter(p=>!(p.state==='leave'&&p.x>320));if(G.deskQ)G.deskQ=D.queue;
  if(D.panel){panelUpdate();return}
- let mx=(IN.r?1:0)-(IN.l?1:0);D.moving=!!mx;if(mx){D.x=clamp(D.x+mx*95*dt,G.deskExit?2:8,166);D.walk+=dt*9;D.face=mx}
+ let mx=(IN.r?1:0)-(IN.l?1:0);D.moving=!!mx;if(mx){D.x=clamp(D.x+mx*95*dt,G.deskExit?2:8,166);D.walk+=dt*2.75;D.face=mx}
  if(G.deskExit&&D.x<=3&&IN.l&&!D.hold){exitDesk();return}
- if(mx)D.glide=null;else if(D.glide!=null){const dd=D.glide-D.x;if(Math.abs(dd)<1.5){D.x=D.glide;D.glide=null;D.moving=false}else{D.x+=Math.sign(dd)*Math.min(Math.abs(dd),170*dt);D.moving=true;D.walk+=dt*12;D.face=Math.sign(dd)}}
+ if(mx)D.glide=null;else if(D.glide!=null){const dd=D.glide-D.x;if(Math.abs(dd)<1.5){D.x=D.glide;D.glide=null;D.moving=false}else{D.x+=Math.sign(dd)*Math.min(Math.abs(dd),170*dt);D.moving=true;D.walk+=dt*3;D.face=Math.sign(dd)}}
  if(PRESS.a){const s=deskStation();if(s&&s.id==='STAMP'&&D.hold&&D.hold.t==='book'&&D.hold.scanned&&!D.hold.stamped){D.dial=D.dial===3?1:3;sfx('click');say('Stamp dial: '+(D.dial===1?'1 WEEK (new books)':'3 WEEKS (regular books)'))}else{const n=deskNext();if(!n){sfx('click');say(G.deskExit?'Nothing to do at the desk — ◀ walk left to the floor.':'Nothing to do yet — wait for the next patron.')}else{const st=ST_DEF.find(q=>q.id===n);if(Math.abs(D.x-st.x)<3)say('You’re at '+st.id+' — press B.');else{D.glide=st.x;sfx('step')}}}}
  if(PRESS.b){if(G.deskExit&&D.x<=10&&!D.hold){exitDesk();return}deskAct()}
  if(G.deskExit&&!D.queue.length&&!D.hold&&!D.panel){D.idleT=(D.idleT||0)+dt;if(D.idleT>1.2){say('Desk is clear — back to the floor!');exitDesk()}}else D.idleT=0}
@@ -504,7 +515,7 @@ function deskDraw(){const F=LY.field,V=sideView(),D=G.desk;buildDeskArt(V);const
  const cxx=ox+2;woodBox(g,cxx,Fy-34,22,4,'#7a4e2c');woodBox(g,cxx,Fy-18,22,4,'#7a4e2c');g.fillStyle='#5a3418';g.fillRect(cxx,Fy-34,2,30);g.fillRect(cxx+20,Fy-34,2,30);
  for(let i=0;i<Math.min(9,(D.cartN||0)+2);i++){g.fillStyle=BOOKC[(i*5)%16];g.fillRect(cxx+3+i*2,Fy-(i<5?42:26),2,8)}circ(cxx+3,Fy-2,2,'#222');circ(cxx+19,Fy-2,2,'#222');
  // DJ (behind the counter) and the station props on top
- const st=deskStation();const fr=D.moving?1+(Math.floor(D.walk)%2):0;const dx=ox+D.x;const feet=Fy-12-(D.hop>0?Math.sin(D.hop/.3*Math.PI)*4:0);
+ const st=deskStation();const fr=D.moving?gaitFr(D.walk):0;const dx=ox+D.x;const feet=Fy-12-(D.hop>0?Math.sin(D.hop/.3*Math.PI)*4:0);
  drawPersonBig(DJ,dx,feet,fr,false);
  if(D.hold)drawItemSmall(D.hold,dx+(D.face<0?-6:6),Fy-36);
  g.drawImage(DESKFG,0,0);
@@ -519,7 +530,7 @@ function deskDraw(){const F=LY.field,V=sideView(),D=G.desk;buildDeskArt(V);const
  const rx=ox+126;g.fillStyle='#4a4a52';g.fillRect(rx-8,Fy-40,16,9);g.fillStyle='#6a6a72';g.fillRect(rx-8,Fy-40,16,1);g.fillStyle='#9adf9a';g.fillRect(rx-6,Fy-46,10,5);g.fillStyle='#3a3a40';g.fillRect(rx-1,Fy-41,2,1);g.fillStyle='#2a2a30';g.fillRect(rx-9,Fy-32,18,2);
  // items waiting on the counter + patrons
  const f=front();if(f&&f.state==='wait'){if(f.kind==='out')f.pile.forEach((it,i)=>drawItemSmall(it,ox+162,Fy-34-i*3));else if(!f.item.taken)drawItemSmall({t:'book',b:f.item.b},ox+162,Fy-34)}
- for(let i=D.queue.length-1;i>=0;i--){const p=D.queue[i];const fr2=(p.walking||p.state==='leave')?1+(Math.floor(T*8)%2):0;drawPersonBig(p.p,ox+p.x,Fy,fr2,p.state==='leave');
+ for(let i=D.queue.length-1;i>=0;i--){const p=D.queue[i];const fr2=(p.walking||p.state==='leave')?gaitFr(T*(p.state==='leave'?2:1.75)):0;drawPersonBig(p.p,ox+p.x,Fy,fr2,p.state==='leave');
   if(p.state!=='leave'&&i<3){const bw=18,bx=ox+p.x-9,by=Fy-48;g.fillStyle='rgba(0,0,0,.5)';g.fillRect(bx,by,bw,3);g.fillStyle=p.pat>50?'#5ad05a':p.pat>25?'#f2b322':'#e04a4a';g.fillRect(bx,by,Math.max(0,bw*p.pat/100),3)}
   if(p.state==='leave'&&p.mood){g.fillStyle=p.mood==='happy'?'#ffe14a':'#e04a4a';g.fillRect(ox+p.x-1,Fy-52,3,3)}}
  // station highlight
@@ -575,8 +586,8 @@ function aisleUpdate(dt){const A=G.aisle;if(A.flag)A.flag.t-=dt;if(A.good)A.good
  if(A.exitT>0){A.exitT-=dt;if(A.exitT<=0)exitAisle();return}
  const xs=gapXs(A,A.reach);
  // swipe: a quick swipe moves exactly one gap; holding the swipe glides
- if(PRESS.l||PRESS.r){const i=nearestGap(A),ni=i+(PRESS.r?1:-1);if(ni<0){A.x=Math.max(8,A.x-14)}else A.x=xs[Math.min(ni,xs.length-1)];A.holdT=0;A.walk+=1}
- else if(IN.l||IN.r){A.holdT+=dt;if(A.holdT>.28){A.x=clamp(A.x+(IN.r?1:-1)*48*dt,8,SHX0+SHW);A.walk+=dt*8}}
+ if(PRESS.l||PRESS.r){const i=nearestGap(A),ni=i+(PRESS.r?1:-1);if(ni<0){A.x=Math.max(8,A.x-14)}else A.x=xs[Math.min(ni,xs.length-1)];A.holdT=0;A.walk+=.5}
+ else if(IN.l||IN.r){A.holdT+=dt;if(A.holdT>.28){A.x=clamp(A.x+(IN.r?1:-1)*48*dt,8,SHX0+SHW);A.walk+=dt*1.75}}
  A.moving=IN.l||IN.r;A.face=IN.l?-1:IN.r?1:A.face;
  if(A.x<SHX0-6&&IN.l&&A.holdT>.2){exitAisle();return}
  if(PRESS.d){if(A.reach===0){A.reach=1}else A.reach=2;sfx('step')}
@@ -621,7 +632,7 @@ function aisleDraw(){const F=LY.field,V=aisleView(),A=G.aisle;const ox=V.ox,Fy=V
  const cx=ox+6;woodBox(g,cx,Fy-30,22,3,'#7a4e2c');woodBox(g,cx,Fy-14,22,3,'#7a4e2c');g.fillStyle='#5a3418';g.fillRect(cx,Fy-30,2,28);g.fillRect(cx+20,Fy-30,2,28);
  A.queue.forEach((b,i)=>{g.fillStyle=b.col;g.fillRect(cx+3+i*3,Fy-40,3,10)});circ(cx+3,Fy-1,2,'#222');circ(cx+19,Fy-1,2,'#222');
  const gx0=xs[A.gap];let sxo=A.x<SHX0-4?A.x:(gx0-17<SHX0+2?gx0+17:gx0-17);const dx=ox+clamp(sxo,8,SHX0+SHW+12);let feet=Fy;if(A.reach===0){woodBox(g,dx-9,Fy-14,18,14,'#c0392b');g.fillStyle='#e0604f';g.fillRect(dx-8,Fy-13,16,2);feet=Fy-14}
- const fr=A.moving?1+(Math.floor(A.walk)%2):0;
+ const fr=A.moving?gaitFr(A.walk):0;
  if(A.reach===2){const s=bigSprite(DJ,0,true);g.drawImage(s,0,0,20,30,Math.round(dx-10),feet-30,20,30);g.fillStyle=DJ_LOOK.p;g.fillRect(dx-8,feet-6,16,6);g.fillStyle=DJ_LOOK.o;g.fillRect(dx-8,feet-2,6,2);g.fillRect(dx+2,feet-2,6,2)}
  else drawPersonBig(DJ,dx,feet,fr,true);
  // the book in DJ's hands, raised toward the reach row
